@@ -1,0 +1,77 @@
+BasedOnStyle: LLVM
+Language: Cpp
+
+
+# --- Indentation
+TabWidth: 4
+UseTab: Never
+IndentCaseLabels: false
+IndentWidth: 4
+IndentWrappedFunctionNames: false
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 4
+AccessModifierOffset: -2 
+NamespaceIndentation: Inner
+
+# --- Braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: false
+    AfterEnum : false
+    AfterFunction : false
+    AfterNamespace : false
+    AfterStruct : false
+    AfterUnion : false
+    BeforeCatch : false
+    BeforeElse : false
+    IndentBraces : false
+    AfterControlStatement: false
+
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+# --- Whitespace
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+MaxEmptyLinesToKeep: 3
+
+# --- Breaks, alignment & reflow
+
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlinesLeft: false
+AlignOperands: false
+AlignTrailingComments: true
+AlignAfterOpenBracket: AlwaysBreak 
+AllowAllParametersOfDeclarationOnNextLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakTemplateDeclarations: Yes
+AlignEscapedNewlines: Left
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializersBeforeComma: true
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+PointerAlignment: Left
+ReflowComments: true
+
+# --- Other
+SortIncludes: false
+ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+
+# --- Penalties
+PenaltyBreakAssignment: 100

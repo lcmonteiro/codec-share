@@ -1,0 +1,7 @@
+# folders 
+build*/*
+output*/*
+# files
+*.log
+*.egg
+*.egg-info
