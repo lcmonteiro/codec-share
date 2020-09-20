@@ -13,27 +13,28 @@ namespace Engine {
 
     namespace System {
         static inline Size Combine(
-            const Container& data,
+            const Container::Frames& data,
             uint32_t seed,
             uint8_t field,
             uint8_t sparsity,
-            Frame& out);
-
+            Container::Frame& out);
     } // namespace System
 
     Size Encode(
-        const Stamp& stamp,
-        const Container& data,
-        Random& rand,
+        const Token::Key& token,
+        const Container::Frames& data,
         Size size,
-        Container& code) {
+        Container::Frames& code) {
+
+        // random generetor
+        Random rand;
 
         // check data
         if (data.empty())
             return 0;
 
         // extract frame size from data
-        const Size frame_size{data.front().size()};
+        auto size_f = Size(data.front().size());
 
         // encode loop
         code.reserve(size);
@@ -45,12 +46,12 @@ namespace Engine {
             auto sparsity = uint8_t(0);
 
             // create combination
-            auto comb = Frame(frame_size + HeaderSize() + sizeof(int));
-            comb.assign(frame_size, 0);
+            auto comb = Container::Frame(
+                size_f + HeaderSize() + sizeof(int), size_f, 0);
             do {
                 seed     = rand();
-                field    = stamp[uint8_t(seed)].first;
-                sparsity = stamp[uint8_t(seed)].second;
+                field    = token[uint8_t(seed)].first;
+                sparsity = token[uint8_t(seed)].second;
             } while (System::Combine(data, seed, field, sparsity, comb) == 0);
 
             // add seed
@@ -69,16 +70,19 @@ namespace Engine {
     }
 
     namespace System {
-        static Size
-        Solve(Size size, Frame& field, Container& coef, Container& data);
+        static Size Solve(
+            Size size,
+            Container::Frame& field,
+            Container::Frames& coef,
+            Container::Frames& data);
     } // namespace System
     Size Decode(
-        const Stamp& stamp,
-        Container code,
-        Size capacity,
-        Container& data,
-        Container& coefs,
-        Frame& fields) {
+        const Token::Key& token,
+        Container::Frames code,
+        Size size,
+        Container::Frames& data,
+        Container::Frames& coefs,
+        Container::Frame& fields) {
 
         // prepare
         for (auto& frame : code) {
@@ -97,14 +101,14 @@ namespace Engine {
             frame.pop_back();
 
             // properties
-            auto field     = uint8_t{stamp[uint8_t(seed)].first};
-            auto sparsity  = uint8_t{stamp[uint8_t(seed)].second};
+            auto field     = uint8_t{token[uint8_t(seed)].first};
+            auto sparsity  = uint8_t{token[uint8_t(seed)].second};
             auto generator = Generator{seed};
 
             // gerenate coefficients
-            auto coef = Frame{capacity + sizeof(int), capacity, 0};
+            auto coef = Container::Frame{size + sizeof(int), size, 0};
             for (auto& val : coef) {
-                auto factor = uint8_t{generator()};
+                auto factor = uint8_t(generator());
                 if (factor > sparsity)
                     continue;
                 val = (factor & field);
@@ -115,7 +119,7 @@ namespace Engine {
             coefs.emplace_back(std::move(coef));
             fields.emplace_back(field);
         }
-        return System::Solve(capacity, fields, coefs, data);
+        return System::Solve(size, fields, coefs, data);
     }
 
     namespace GF8 {
@@ -233,13 +237,15 @@ namespace Engine {
             }
             return P2V[x];
         }
+
         static inline int Mul(int a, int b) {
             if (a == 0 || b == 0) {
                 return 0;
             }
             return P2V[V2P[a] + V2P[b]];
         }
-        static inline Frame& Mul(Frame& b, int m) {
+
+        static inline Container::Frame& Mul(Container::Frame& b, int m) {
             if (m == 0) {
                 fill(b.begin(), b.end(), 0);
                 return b;
@@ -253,7 +259,8 @@ namespace Engine {
             }
             return b;
         }
-        static inline Frame& Mul(Frame& b, int m, int i) {
+
+        static inline Container::Frame& Mul(Container::Frame& b, int m, int i) {
             if (m == 0) {
                 fill(b.begin() + i, b.end(), 0);
                 return b;
@@ -268,7 +275,9 @@ namespace Engine {
             }
             return b;
         }
-        static inline Frame& Sum(Frame& a, Frame& b) {
+
+        static inline Container::Frame&
+        Sum(Container::Frame& a, Container::Frame& b) {
             int* p0 = reinterpret_cast<int*>(a.data());
             int* p1 = reinterpret_cast<int*>(b.data());
             int* pe = reinterpret_cast<int*>(a.data() + a.size());
@@ -278,7 +287,8 @@ namespace Engine {
             return a;
         }
 
-        static inline Frame& Sum(Frame& a, Frame& b, int i) {
+        static inline Container::Frame&
+        Sum(Container::Frame& a, Container::Frame& b, int i) {
             int* p0 = reinterpret_cast<int*>(a.data() + (i & INT_MASK));
             int* p1 = reinterpret_cast<int*>(b.data() + (i & INT_MASK));
             int* pe = reinterpret_cast<int*>(a.data() + a.size());
@@ -293,14 +303,14 @@ namespace Engine {
 
         // Build a combination
         static inline Size Combine(
-            const Container& data,
+            const Container::Frames& data,
             uint32_t seed,
             uint8_t field,
             uint8_t sparsity,
-            Frame& out) {
+            Container::Frame& out) {
 
             auto gen     = Generator{seed};
-            auto aux     = Frame{out.capacity()};
+            auto aux     = Container::Frame{out.capacity()};
             auto factor  = uint8_t{0};
             auto counter = size_t{0};
             for (auto& frame : data) {
@@ -321,8 +331,11 @@ namespace Engine {
         }
 
         /// Solve a combination system
-        static inline void
-        Elimination(Container& coef, Container& data, int index) {
+        static inline void Elimination(
+            Container::Frames& coef,
+            Container::Frames& data,
+            int index) {
+
             for (uint32_t i = index + 1; i < data.size(); ++i) {
                 if (coef[i][index] == 0) {
                     continue;
@@ -341,7 +354,7 @@ namespace Engine {
             }
         }
         static inline bool
-        Prepare(Container& coef, Container& data, int index) {
+        Prepare(Container::Frames& coef, Container::Frames& data, int index) {
             if (coef[index][index]) {
                 return true;
             }
@@ -354,8 +367,10 @@ namespace Engine {
             }
             return false;
         }
-        static inline void
-        ReverseElimination(Container& coef, Container& data, int index) {
+        static inline void ReverseElimination(
+            Container::Frames& coef,
+            Container::Frames& data,
+            int index) {
             for (int i = 0; i < index; ++i) {
                 if (coef[i][index] == 0) {
                     continue;
@@ -373,8 +388,10 @@ namespace Engine {
                 GF8::Sum(data[i], GF8::Mul(data[index], factor));
             }
         }
-        static inline void
-        Unification(Container& coef, Container& data, int index) {
+        static inline void Unification(
+            Container::Frames& coef,
+            Container::Frames& data,
+            int index) {
             auto factor = GF8::Div(1, coef[index][index]);
             if (factor == 0) {
                 return;
@@ -385,8 +402,10 @@ namespace Engine {
             GF8::Mul(coef[index], factor, index);
             GF8::Mul(data[index], factor);
         }
-        static inline void
-        Organize(Frame& field, Container& coef, Container& data) {
+        static inline void Organize(
+            Container::Frame& field,
+            Container::Frames& coef,
+            Container::Frames& data) {
             if (field.empty()) {
                 return;
             }
@@ -407,8 +426,11 @@ namespace Engine {
                 }
             }
         }
-        static Size
-        Solve(Size size, Frame& field, Container& coef, Container& data) {
+        static Size Solve(
+            Size size,
+            Container::Frame& field,
+            Container::Frames& coef,
+            Container::Frames& data) {
             size_t n = 0;
             // organize data
             Organize(field, coef, data);

@@ -1,13 +1,22 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.13)
+
+project(codec-share)
+
+include(GoogleTest)
+
+add_executable(tests tests.cpp)
+target_link_libraries(tests GTest::GTest)
+add_test(NAME monolithic COMMAND tests)
 
 # codec target
-add_library(share-codec
+add_library(codec-share
 	./source/engine.cpp
-	./source/stamp.cpp
+	./source/token.cpp
 )
 
 # includes
-target_include_directories(share-codec 
+target_include_directories(codec-share
 PUBLIC
 	./include
 )
+

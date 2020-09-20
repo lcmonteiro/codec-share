@@ -10,14 +10,13 @@
 #include <functional>
 #include <cstdint>
 
-#include "stamp.hpp"
+#include "token.hpp"
+#include "container.hpp"
 
 namespace Codec {
 /// definitions
 using Random    = std::random_device;
 using Size      = std::uint32_t;
-using Frame     = std::vector<std::uint8_t>;
-using Container = std::vector<Frame>;
 using Generator = std::minstd_rand0;
 
 namespace Engine {
@@ -30,26 +29,26 @@ namespace Engine {
     /// @param rand
     /// @param size
     /// @param code
-    size_t Encode(
-        const Container& data,
-        const Stamp& stamp,
-        Random& rand,
+    Size Encode(
+        const Token::Key& token,
+        const Container::Frames& data,
         Size size,
-        Container& code);
+        Container::Frames& code);
 
     /// Decode
-    /// @param data
-    /// @param stamp
-    /// @param rand
-    /// @param size
+    /// @param token
     /// @param code
-    size_t Decode(
-        const Container& code,
-        const Stamp& stamp,
-        Size capacity,
-        Container& data,
-        Container& coefs,
-        Frame& fields);
+    /// @param size
+    /// @param data
+    /// @param coefs
+    /// @param fields
+    Size Decode(
+        const Token::Key& token,
+        Container::Frames code,
+        Size size,
+        Container::Frames& data,
+        Container::Frames& coefs,
+        Container::Frame& fields);
 
 } // namespace Engine
 } // namespace Codec
