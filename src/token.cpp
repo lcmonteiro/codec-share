@@ -9,12 +9,12 @@
 
 namespace Codec {
 namespace Token {
-    using Density = Key::value_type;
+    using Density = Stamp::value_type;
 
     /// Defaults
-    const std::map<Type, std::shared_ptr<const Key>> DEFAULT{
-        {Type::NONE, std::make_shared<const Key>(256, Density{0, 0})},
-        {Type::FULL, std::make_shared<const Key>(256, Density{255, 255})}};
+    const std::map<Type, std::shared_ptr<const Stamp>> DEFAULT{
+        {Type::NONE, std::make_shared<const Stamp>(256, Density{0, 0})},
+        {Type::FULL, std::make_shared<const Stamp>(256, Density{255, 255})}};
 
     /// Templates
     const std::map<Type, std::pair<const Density, const Density>> TEMPLATE{
@@ -26,14 +26,14 @@ namespace Token {
 
     /// Default Tokens by type
     /// @param type
-    Shared::Key Default(Type type) {
+    Shared::Stamp Default(Type type) {
 		return DEFAULT.at(type);
 	}
 
     /// Generate Tokens by type
     /// @param type
     /// @param seed
-    Unique::Key Generate(Type type, uint64_t seed) {
+    Unique::Stamp Generate(Type type, uint64_t seed) {
         // limits
         auto tmp = TEMPLATE.at(type);
         auto min = tmp.first;
@@ -41,7 +41,7 @@ namespace Token {
         // generator
         auto gen = std::mt19937_64{seed};
         // init stamp
-        auto out = Key{256};
+        auto out = Stamp{256};
         // build stamp
         for (auto& v : out) {
             v.first = uint8_t(gen());
@@ -52,7 +52,7 @@ namespace Token {
             v.second &= max.second;
         }
         // return a unique pointer
-        return std::make_unique<const Key>(std::move(out));
+        return std::make_unique<const Stamp>(std::move(out));
     }
 } // namespace Token
 } // namespace Codec

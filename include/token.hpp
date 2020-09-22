@@ -12,20 +12,20 @@
 // Codec Token
 namespace Codec {
 namespace Token {
-    /// Token Key
+    /// Token Stamp
     ///   is a group of densities
     ///   where a density is a pair of:
     ///   - 1º field size
     ///   - 2º sparsity
-    using Key = std::vector<std::pair<uint8_t, uint8_t>>;
+    using Stamp = std::vector<std::pair<uint8_t, uint8_t>>;
     
     /// shared key
     namespace Shared {
-        using Key = std::shared_ptr<const Key>;
+        using Stamp = std::shared_ptr<const Stamp>;
     }
     /// unique key
     namespace Unique {
-        using Key = std::unique_ptr<const Key>;
+        using Stamp = std::unique_ptr<const Stamp>;
     }
 
     /// Type of Tokens
@@ -38,11 +38,11 @@ namespace Token {
 
     /// Default Tokens by type
     /// @param type
-    Shared::Key Default(Type type);
+    Shared::Stamp Default(Type type);
 
     /// Generate Tokens by type
     /// @param type
-    Unique::Key Generate(Type type);
+    Unique::Stamp Generate(Type type);
 
 } // namespace Token
 } // namespace Codec

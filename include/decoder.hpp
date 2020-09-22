@@ -11,7 +11,7 @@ namespace Codec {
 /// Codec Decoder
 class Decoder {
   public:
-    // empty constructor
+    /// empty constructor
     Decoder() = default;
 
     /// move constructor
@@ -20,9 +20,7 @@ class Decoder {
     /// constructor
     /// @param capacity
     /// @param token
-    Decoder(
-        Size capacity,
-        Token::Shared::Key token = Token::Default(Token::Type::FULL))
+    Decoder(Size capacity, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
       : data_{}
       , coef_{}
       , field_(capacity << 1)
@@ -40,36 +38,38 @@ class Decoder {
     Decoder(
         Size capacity,
         Container::Frames init,
-        Token::Shared::Key token = Token::Default(Token::Type::FULL))
+        Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
       : Decoder(capacity, token) {
         push(std::move(init));
+    }
+
+    /// constructor
+    /// @param data
+    /// @param token
+    Decoder(Container::Frames data, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+      : Decoder(data.size(), token) {
+        push(std::move(data));
     }
 
     /// move operator
     Decoder& operator=(Decoder&&) = default;
 
-    /// Push
+    /// push
     /// @param data
     Decoder& push(Container::Frame data) {
-        size_ = Engine::Decode(
-            *token_,
-            Container::Frames{std::move(data)},
-            capacity_,
-            data_,
-            coef_,
-            field_);
+        size_ = Engine::Decode(*token_, {std::move(data)}, capacity_, data_, coef_, field_);
         return *this;
     }
 
-    /// Push
+    /// push
     /// @param data
     Decoder& push(Container::Frames data) {
-        size_ = Engine::Decode(
-            *token_, std::move(data), capacity_, data_, coef_, field_);
+        size_ = Engine::Decode(*token_, std::move(data), capacity_, data_, coef_, field_);
         return *this;
     }
 
-    /// Pop data
+    /// pop
+    /// @return decoded frames
     Container::Frames pop() {
         // move data
         auto out{std::move(data_)};
@@ -81,6 +81,7 @@ class Decoder {
     }
 
     /// Clear data
+    /// @return this
     Decoder& clear() {
         size_ = 0;
         coef_.clear();
@@ -90,24 +91,24 @@ class Decoder {
     }
 
     /// Iterators
-    /// Forward
+    /// forward
     auto begin() const { return data_.begin(); }
     auto end() const { return std::next(data_.begin(), size_); }
 
-    /// Backward
+    /// backward
     auto rbegin() const { return std::prev(data_.rend(), size_); }
     auto rend() const { return data_.rend(); }
 
-    /// References
+    /// references
     auto front() const { return data_.front(); }
     auto at(size_t n) const { return data_.at(n); }
     auto back() const { return data_.at(size_ - 1); }
 
-    /// Quantity
-    bool full() { return (size_ >= capacity_); }
-    bool empty() { return (size_ == 0); }
-    Size size() { return size_; }
-    Size capacity() { return capacity_; }
+    /// quantity
+    auto full() { return (size_ >= capacity_); }
+    auto empty() { return (size_ == 0); }
+    auto size() { return size_; }
+    auto capacity() { return capacity_; }
     void resize(Size size) {
         data_.resize(size);
         coef_.resize(size);
@@ -123,7 +124,7 @@ class Decoder {
     Container::Frame field_;
 
     /// Context
-    Token::Shared::Key token_;
+    Token::Shared::Stamp token_;
     Size capacity_;
     Size size_;
 };

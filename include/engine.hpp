@@ -28,12 +28,9 @@ namespace Engine {
     /// @param stamp
     /// @param rand
     /// @param size
-    /// @param code
-    Size Encode(
-        const Token::Key& token,
-        const Container::Frames& data,
-        Size size,
-        Container::Frames& code);
+    /// @return coded data
+    Container::Frames
+    Encode(const Token::Stamp& token, const Container::Frames& data, Size size);
 
     /// Decode
     /// @param token
@@ -43,7 +40,7 @@ namespace Engine {
     /// @param coefs
     /// @param fields
     Size Decode(
-        const Token::Key& token,
+        const Token::Stamp& token,
         Container::Frames code,
         Size size,
         Container::Frames& data,

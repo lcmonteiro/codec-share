@@ -19,23 +19,19 @@ class Encoder {
     /// @param capacity
     /// @param token
     Encoder(
+        Size length,
         Size capacity,
-        Token::Shared::Key token = Token::Default(Token::Type::FULL))
-
-      : data_(capacity)
-      , capacity_(capacity)
-      , size_(capacity)
-      , token_(token) {}
+        Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+      : data_{}
+      , capacity_{capacity}
+      , token_{token} {}
 
     /// constructor
-    /// @param init
+    /// @param data
     /// @param token
-    Encoder(
-        Container::Frames&& init,
-        Token::Shared::Key token = Token::Default(Token::Type::FULL))
-      : data_(std::move(init))
-      , capacity_(init.size())
-      , size_(init.size())
+    Encoder(Container::Frames data, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+      : data_(std::move(data))
+      , capacity_(data.size())
       , token_(token) {}
 
     /// Move Constructor
@@ -47,21 +43,18 @@ class Encoder {
     /// Data
     /// push data
     Encoder& push(Container::Frame data) {
-        data_.emplace_back(std::move(data));
+        data_.push(std::move(data));
         return *this;
     }
     Encoder& push(Container::Frames data) {
         for (auto& d : data)
-            data_.emplace_back(std::move(d));
+            data_.push(std::move(d));
         return *this;
     }
 
     /// pop data
-    auto pop() {
-        Container::Frames out;
-        Engine::Encode(*token_, data_, size_, out);
-        return std::move(out);
-    }
+    /// @param size
+    auto pop(size_t size) { return Engine::Encode(*token_, data_, size); }
 
     /// clear data
     Encoder& clear() {
@@ -75,9 +68,9 @@ class Encoder {
     auto end() const { return data_.end(); }
 
     /// Quantity
-    bool full() { return (data_.size() >= capacity_); }
-    Size size() { return data_.size(); }
-    Size capacity() { return capacity_; }
+    auto full() { return (data_.size() >= capacity_); }
+    auto size() { return data_.size(); }
+    auto capacity() { return capacity_; }
 
   private:
     /// data
@@ -86,6 +79,6 @@ class Encoder {
     /// context
     Size capacity_;
     Size size_;
-    Token::Shared::Key token_;
+    Token::Shared::Stamp token_;
 };
 } // namespace Codec

@@ -64,10 +64,10 @@ BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
 BreakConstructorInitializersBeforeComma: true
-
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 PointerAlignment: Left
 ReflowComments: true
+ColumnLimit: 100
 
 # --- Other
 SortIncludes: false
