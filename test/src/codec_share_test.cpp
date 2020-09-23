@@ -39,25 +39,26 @@ class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams>
 /// Test CodecEnvironment
 TEST_P(CodecEnvironment, positive_test) {
     auto params = GetParam();
-    // Generate
-    auto data_in = Generate(params.width, params.height);
-    auto token   = Codec::Token::Generate(params.token, 1);
+    // Generate data
+    auto input = Generate(params.width, params.height);
+    // Generate token
+    auto token = Codec::Token::Generate(params.token, 1);
     // Encoder
-    Codec::Encoder en(data_in, token);
+    Codec::Encoder en(input, token);
     // Encode
     auto coded = en.pop(params.height + params.redundancy);
     // Decoder
     Codec::Decoder de(params.height, coded, token);
     // Decode
-    auto data_out = de.pop();
+    auto output = de.pop();
     // Check
-    EXPECT_EQ(data_out, data_in);
+    EXPECT_EQ(output, input);
 }
 INSTANTIATE_TEST_SUITE_P(
     CodecCommon,
     CodecEnvironment,
     testing::Values(
-        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::FULL},
-        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::MESSAGE},
-        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::STREAM},
-        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::SPARSE}));
+        CodecEnvironmentParams{1000, 50, 1, Codec::Token::Type::FULL},
+        CodecEnvironmentParams{1000, 50, 1, Codec::Token::Type::MESSAGE},
+        CodecEnvironmentParams{1000, 50, 5, Codec::Token::Type::STREAM},
+        CodecEnvironmentParams{1000, 50, 2, Codec::Token::Type::SPARSE}));

@@ -25,12 +25,11 @@ namespace Token {
     }
 
     /// Type of Tokens
-    /// - None
     /// - Sparse
     /// - Stream
     /// - Message
     /// - Full
-    enum class Type { NONE, SPARSE, STREAM, MESSAGE, FULL };
+    enum class Type {SPARSE, STREAM, MESSAGE, FULL };
 
     /// Default Tokens by type
     /// @param type

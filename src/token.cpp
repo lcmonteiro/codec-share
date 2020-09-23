@@ -13,27 +13,28 @@ namespace Token {
 
     /// Defaults
     const std::map<Type, std::shared_ptr<const Stamp>> DEFAULT{
-        {Type::NONE, std::make_shared<const Stamp>(256, Density{0, 0})},
+        {Type::SPARSE, std::make_shared<const Stamp>(256, Density{31, 127})},
         {Type::FULL, std::make_shared<const Stamp>(256, Density{255, 255})}};
 
     /// Templates
     const std::map<Type, std::pair<const Density, const Density>> TEMPLATE{
-        {Type::NONE, /*****/ {{0, 0}, /******/ {0, 0}}},
-        {Type::SPARSE, /***/ {{1, 4}, /******/ {255, 255}}},
-        {Type::STREAM, /***/ {{1, 8}, /******/ {3, 127}}},
-        {Type::MESSAGE, /**/ {{7, 16}, /*****/ {255, 255}}},
-        {Type::FULL, /*****/ {{255, 255}, /**/ {255, 255}}}};
+
+        {Type::STREAM, /***/ {{1, 40}, /***/ {2, 128}}},
+        {Type::SPARSE, /***/ {{1, 20}, /***/ {8, 200}}},
+        {Type::MESSAGE, /**/ {{3, 20}, /***/ {8, 255}}},
+        {Type::FULL, /*****/ {{8, 255}, /**/ {8, 255}}}};
 
     /// Default Tokens by type
     /// @param type
-    Shared::Stamp Default(Type type) {
-		return DEFAULT.at(type);
-	}
+    Shared::Stamp Default(Type type) { return DEFAULT.at(type); }
 
     /// Generate Tokens by type
     /// @param type
     /// @param seed
     Shared::Stamp Generate(Type type, uint64_t seed) {
+
+        // field mask
+        auto mask = [](uint8_t nbits) -> uint8_t { return (1 << nbits) - 1; };
         // limits
         auto tmp = TEMPLATE.at(type);
         auto min = tmp.first;
@@ -44,12 +45,10 @@ namespace Token {
         auto out = Stamp{256};
         // build stamp
         for (auto& v : out) {
-            v.first = uint8_t(gen());
-            v.first |= min.first;
-            v.first &= max.first;
-            v.second = uint8_t(gen());
-            v.second |= min.second;
-            v.second &= max.second;
+            std::uniform_int_distribution<uint8_t> field(min.first, max.first);
+            v.first = mask(field(gen));
+            std::uniform_int_distribution<uint8_t> sparse(min.second, max.second);
+            v.second = sparse(gen);
         }
         // return a unique pointer
         return std::make_unique<const Stamp>(std::move(out));
