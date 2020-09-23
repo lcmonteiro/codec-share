@@ -274,7 +274,7 @@ namespace Engine {
                     continue;
                 // copy for calculation process
                 aux.assign(frame.begin(), frame.end());
-                // calculation process [ Y += Xn * Cn]
+                // calculation process (Y += Xn * Cn)
                 GF8::Sum(out, GF8::Mul(aux, factor));
                 // track number of merges
                 ++counter;

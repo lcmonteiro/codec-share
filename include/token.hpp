@@ -23,10 +23,6 @@ namespace Token {
     namespace Shared {
         using Stamp = std::shared_ptr<const Stamp>;
     }
-    /// unique key
-    namespace Unique {
-        using Stamp = std::unique_ptr<const Stamp>;
-    }
 
     /// Type of Tokens
     /// - None
@@ -42,7 +38,7 @@ namespace Token {
 
     /// Generate Tokens by type
     /// @param type
-    Unique::Stamp Generate(Type type);
+    Shared::Stamp Generate(Type type, size_t seed);
 
 } // namespace Token
 } // namespace Codec

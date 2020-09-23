@@ -33,7 +33,7 @@ namespace Token {
     /// Generate Tokens by type
     /// @param type
     /// @param seed
-    Unique::Stamp Generate(Type type, uint64_t seed) {
+    Shared::Stamp Generate(Type type, uint64_t seed) {
         // limits
         auto tmp = TEMPLATE.at(type);
         auto min = tmp.first;

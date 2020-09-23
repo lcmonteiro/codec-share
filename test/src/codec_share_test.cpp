@@ -6,34 +6,58 @@
 #include "encoder.hpp"
 #include "decoder.hpp"
 
-TEST(codec, base) {
-    // Properties
-    auto VECTOR_SIZE = 10000;
-    auto MATRIX_SIZE = 50;
+/// CodecEnvironmentParams
+struct CodecEnvironmentParams {
+    size_t width;
+    size_t height;
+    size_t redundancy;
+    Codec::Token::Type token;
+};
 
-    // First create an instance of an engine
-    std::random_device rnd;
-    // Specify the engine
-    std::mt19937 engine{rnd()};
-    // Specify th distribution
-    std::uniform_int_distribution<uint8_t> dist{0, 255};
-    // Generate data
-    std::vector<std::vector<uint8_t>> data_in;
-    for (int i = 0; i < MATRIX_SIZE; ++i) {
-        std::vector<uint8_t> vec(VECTOR_SIZE);
-        std::generate(std::begin(vec), std::end(vec), [&dist, &engine]() {
-            return dist(engine);
-        });
-        data_in.emplace_back(std::move(vec));
+/// CodecEnvironment
+class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams> {
+  public:
+    Codec::Container::Frames Generate(size_t width, size_t height) {
+        // First create an instance of an engine
+        std::random_device rnd;
+        // Specify the engine
+        std::mt19937 engine{rnd()};
+        // Specify th distribution
+        std::uniform_int_distribution<uint8_t> dist{0, 255};
+        // Generate data
+        std::vector<std::vector<uint8_t>> data;
+        for (int i = 0; i < height; ++i) {
+            std::vector<uint8_t> vec(width);
+            std::generate(
+                std::begin(vec), std::end(vec), [&dist, &engine]() { return dist(engine); });
+            data.emplace_back(std::move(vec));
+        }
+        return data;
     }
+};
+
+/// Test CodecEnvironment
+TEST_P(CodecEnvironment, positive_test) {
+    auto params = GetParam();
+    // Generate
+    auto data_in = Generate(params.width, params.height);
+    auto token   = Codec::Token::Generate(params.token, 1);
     // Encoder
-    Codec::Encoder en(data_in);
+    Codec::Encoder en(data_in, token);
     // Encode
-    auto coded = en.pop(data_in.size());
+    auto coded = en.pop(params.height + params.redundancy);
     // Decoder
-    Codec::Decoder de(coded);
+    Codec::Decoder de(params.height, coded, token);
     // Decode
     auto data_out = de.pop();
     // Check
-    EXPECT_TRUE(data_out == data_in);
+    EXPECT_EQ(data_out, data_in);
 }
+INSTANTIATE_TEST_SUITE_P(
+    CodecCommon,
+    CodecEnvironment,
+    testing::Values(
+        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::FULL},
+        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::MESSAGE},
+        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::STREAM},
+        CodecEnvironmentParams{1000, 50, 0, Codec::Token::Type::SPARSE}));
