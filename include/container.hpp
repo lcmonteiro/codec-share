@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 namespace Codec {
@@ -26,25 +26,20 @@ namespace Container {
 
         /// Constructor
         /// @param vec
-        Frame(Super vec)
-          : Super(std::move(vec)) {}
+        Frame(Super vec) : Super(std::move(vec)) {}
 
         /// Constructor
         /// @param capacity
         /// @param size
         /// @param value
-        Frame(size_t capacity, size_t size, uint8_t value)
-          : Super() {
+        Frame(size_t capacity, size_t size, uint8_t value) : Super() {
             reserve(capacity);
             assign(size, value);
         }
 
         /// Constructor
         /// @param capacity
-        Frame(size_t capacity)
-          : Super() {
-            reserve(capacity);
-        }
+        Frame(size_t capacity) : Super() { reserve(capacity); }
 
         /// Default Operators
         Frame& operator=(Frame&&) = default;
@@ -88,29 +83,27 @@ namespace Container {
         /// Constructor
         /// @param frame
         template <
-            typename Container,
-            typename = std::enable_if_t<std::is_assignable<Container, Frame>::value>>
-        Frames(Container frame)
-          : Super() {
+          typename Container,
+          typename = std::enable_if_t<std::is_assignable<Container, Frame>::value>>
+        Frames(Container frame) : Super() {
             push(std::move(frame));
         }
 
         /// Constructor
         /// @param frames
         template <
-            typename Container,
-            typename Value = typename Container::value_type,
-            typename       = std::enable_if_t<std::is_assignable<Value, Frame>::value>>
-        Frames(Container frames)
-          : Super() {
+          typename Container,
+          typename Value = typename Container::value_type,
+          typename       = std::enable_if_t<std::is_assignable<Value, Frame>::value>>
+        Frames(Container frames) : Super() {
             push(std::move(frames));
         }
 
         /// Push
         /// @param frame
         template <
-            typename Container,
-            typename = std::enable_if_t<std::is_assignable<Container, Frame>::value>>
+          typename Container,
+          typename = std::enable_if_t<std::is_assignable<Container, Frame>::value>>
         Frames& push(Container frame) {
             emplace_back(std::move(frame));
             if (front().size() != back().size()) {
@@ -123,9 +116,9 @@ namespace Container {
         /// Push Frames
         /// @param container
         template <
-            typename Container,
-            typename Value = typename Container::value_type,
-            typename       = std::enable_if_t<std::is_assignable<Value, Frame>::value>>
+          typename Container,
+          typename Value = typename Container::value_type,
+          typename       = std::enable_if_t<std::is_assignable<Value, Frame>::value>>
         Frames& push(Container frames) {
             for (auto& f : frames)
                 push(std::move(f));

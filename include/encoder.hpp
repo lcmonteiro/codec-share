@@ -16,23 +16,20 @@ class Encoder {
     Encoder() = default;
 
     /// constructor
+    /// @param length
     /// @param capacity
     /// @param token
     Encoder(
-        Size length,
-        Size capacity,
-        Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
-      : data_{}
-      , capacity_{capacity}
-      , token_{token} {}
+      size_t length,
+      size_t capacity,
+      Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+      : data_{}, capacity_{capacity}, token_{token} {}
 
     /// constructor
     /// @param data
     /// @param token
     Encoder(Container::Frames data, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
-      : data_(std::move(data))
-      , capacity_(data.size())
-      , token_(token) {}
+      : data_(std::move(data)), capacity_(data.size()), token_(token) {}
 
     /// Move Constructor
     Encoder(Encoder&&) = default;
@@ -77,8 +74,8 @@ class Encoder {
     Container::Frames data_;
 
     /// context
-    Size capacity_;
-    Size size_;
+    size_t capacity_;
+    size_t size_;
     Token::Shared::Stamp token_;
 };
 } // namespace Codec

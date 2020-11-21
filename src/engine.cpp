@@ -10,19 +10,17 @@
 /// Implementation
 namespace Codec {
 namespace Engine {
+    using namespace Container;
+    using namespace Token;
 
     namespace System {
-        static inline Size Combine(
-            const Container::Frames& data,
-            uint32_t seed,
-            uint8_t field,
-            uint8_t sparsity,
-            Container::Frame& out);
+        static inline size_t
+        Combine(const Frames& data, uint32_t seed, uint8_t field, uint8_t sparsity, Frame& out);
     } // namespace System
 
-    Container::Frames Encode(const Token::Stamp& token, const Container::Frames& data, Size size) {
+    Frames Encode(const Stamp& token, const Frames& data, size_t size) {
         // coded container
-        Container::Frames code;
+        Frames code;
         // random generetor
         Random rand;
         // sizes
@@ -35,7 +33,7 @@ namespace Engine {
             auto field    = uint8_t(0);
             auto sparsity = uint8_t(0);
             // create combination
-            Container::Frame comb{code_length + sizeof(int), data_length, 0};
+            Frame comb{code_length + sizeof(int), data_length, 0};
             do {
                 seed     = rand();
                 field    = token[uint8_t(seed)].first;
@@ -56,16 +54,15 @@ namespace Engine {
     }
 
     namespace System {
-        static Size
-        Solve(Size size, Container::Frame& field, Container::Frames& coef, Container::Frames& data);
+        static size_t Solve(size_t size, Frame& field, Frames& coef, Frames& data);
     } // namespace System
-    Size Decode(
-        const Token::Stamp& token,
-        Container::Frames code,
-        Size size,
-        Container::Frames& data,
-        Container::Frames& coefs,
-        Container::Frame& fields) {
+    size_t Decode(
+        const Stamp& token,
+        Frames code,
+        size_t size,
+        Frames& data,
+        Frames& coefs,
+        Frame& fields) {
         // prepare
         for (auto& frame : code) {
             // remove seed
@@ -85,7 +82,7 @@ namespace Engine {
             auto sparsity  = uint8_t{token[uint8_t(seed)].second};
             auto generator = Generator{seed};
             // gerenate coefficients
-            auto coef = Container::Frame{size + sizeof(int), size, 0};
+            auto coef = Frame{size + sizeof(int), size, 0};
             for (auto& val : coef) {
                 auto factor = uint8_t(generator());
                 if (factor > sparsity)
@@ -200,7 +197,7 @@ namespace Engine {
             return P2V[V2P[a] + V2P[b]];
         }
 
-        static inline Container::Frame& Mul(Container::Frame& b, int m) {
+        static inline Frame& Mul(Frame& b, int m) {
             if (m == 0) {
                 fill(b.begin(), b.end(), 0);
                 return b;
@@ -215,7 +212,7 @@ namespace Engine {
             return b;
         }
 
-        static inline Container::Frame& Mul(Container::Frame& b, int m, int i) {
+        static inline Frame& Mul(Frame& b, int m, int i) {
             if (m == 0) {
                 fill(b.begin() + i, b.end(), 0);
                 return b;
@@ -230,7 +227,7 @@ namespace Engine {
             return b;
         }
 
-        static inline Container::Frame& Sum(Container::Frame& a, Container::Frame& b) {
+        static inline Frame& Sum(Frame& a, Frame& b) {
             int* p0 = reinterpret_cast<int*>(a.data());
             int* p1 = reinterpret_cast<int*>(b.data());
             int* pe = reinterpret_cast<int*>(a.data() + a.size());
@@ -240,7 +237,7 @@ namespace Engine {
             return a;
         }
 
-        static inline Container::Frame& Sum(Container::Frame& a, Container::Frame& b, int i) {
+        static inline Frame& Sum(Frame& a, Frame& b, int i) {
             int* p0 = reinterpret_cast<int*>(a.data() + (i & INT_MASK));
             int* p1 = reinterpret_cast<int*>(b.data() + (i & INT_MASK));
             int* pe = reinterpret_cast<int*>(a.data() + a.size());
@@ -254,14 +251,10 @@ namespace Engine {
     namespace System {
 
         // Build a combination
-        static inline Size Combine(
-            const Container::Frames& data,
-            uint32_t seed,
-            uint8_t field,
-            uint8_t sparsity,
-            Container::Frame& out) {
+        static inline size_t
+        Combine(const Frames& data, uint32_t seed, uint8_t field, uint8_t sparsity, Frame& out) {
             // combine loop
-            auto aux     = Container::Frame{out.capacity()};
+            auto aux     = Frame{out.capacity()};
             auto gen     = Generator{seed};
             auto factor  = uint8_t{0};
             auto counter = size_t{0};
@@ -283,8 +276,7 @@ namespace Engine {
         }
 
         /// Solve a combination system
-        static inline void
-        Elimination(Container::Frames& coef, Container::Frames& data, int index) {
+        static inline void Elimination(Frames& coef, Frames& data, int index) {
             for (uint32_t i = index + 1; i < data.size(); ++i) {
                 if (coef[i][index] == 0) {
                     continue;
@@ -302,7 +294,7 @@ namespace Engine {
                 GF8::Sum(GF8::Mul(data[i], factor), data[index]);
             }
         }
-        static inline bool Prepare(Container::Frames& coef, Container::Frames& data, int index) {
+        static inline bool Prepare(Frames& coef, Frames& data, int index) {
             if (coef[index][index]) {
                 return true;
             }
@@ -315,8 +307,7 @@ namespace Engine {
             }
             return false;
         }
-        static inline void
-        ReverseElimination(Container::Frames& coef, Container::Frames& data, int index) {
+        static inline void ReverseElimination(Frames& coef, Frames& data, int index) {
             for (int i = 0; i < index; ++i) {
                 if (coef[i][index] == 0) {
                     continue;
@@ -334,8 +325,7 @@ namespace Engine {
                 GF8::Sum(data[i], GF8::Mul(data[index], factor));
             }
         }
-        static inline void
-        Unification(Container::Frames& coef, Container::Frames& data, int index) {
+        static inline void Unification(Frames& coef, Frames& data, int index) {
             auto factor = GF8::Div(1, coef[index][index]);
             if (factor == 0) {
                 return;
@@ -346,8 +336,7 @@ namespace Engine {
             GF8::Mul(coef[index], factor, index);
             GF8::Mul(data[index], factor);
         }
-        static inline void
-        Organize(Container::Frame& field, Container::Frames& coef, Container::Frames& data) {
+        static inline void Organize(Frame& field, Frames& coef, Frames& data) {
             if (field.empty()) {
                 return;
             }
@@ -368,11 +357,7 @@ namespace Engine {
                 }
             }
         }
-        static Size Solve(
-            Size size,
-            Container::Frame& field,
-            Container::Frames& coef,
-            Container::Frames& data) {
+        static size_t Solve(size_t size, Frame& field, Frames& coef, Frames& data) {
             size_t n = 0;
             // organize data
             Organize(field, coef, data);

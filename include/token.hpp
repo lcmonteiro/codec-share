@@ -5,9 +5,9 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <vector>
-#include <map>
 
 // Codec Token
 namespace Codec {
@@ -18,7 +18,7 @@ namespace Token {
     ///   - 1º field size
     ///   - 2º sparsity
     using Stamp = std::vector<std::pair<uint8_t, uint8_t>>;
-    
+
     /// shared key
     namespace Shared {
         using Stamp = std::shared_ptr<const Stamp>;
@@ -29,7 +29,7 @@ namespace Token {
     /// - Stream
     /// - Message
     /// - Full
-    enum class Type {SPARSE, STREAM, MESSAGE, FULL };
+    enum class Type { SPARSE, STREAM, MESSAGE, FULL };
 
     /// Default Tokens by type
     /// @param type

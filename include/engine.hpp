@@ -4,24 +4,27 @@
 
 #pragma once
 
+#include <cstdint>
+#include <functional>
+#include <random>
 #include <utility>
 #include <vector>
-#include <random>
-#include <functional>
-#include <cstdint>
 
-#include "token.hpp"
 #include "container.hpp"
+#include "token.hpp"
 
 namespace Codec {
 /// definitions
 using Random    = std::random_device;
-using Size      = std::uint32_t;
 using Generator = std::minstd_rand0;
 
 namespace Engine {
+    using Frames = Container::Frames;
+    using Frame  = Container::Frame;
+    using Stamp  = Token::Stamp;
+
     /// Coded Header Size
-    constexpr Size HeaderSize() { return (sizeof(uint32_t)); }
+    constexpr size_t HeaderSize() { return (sizeof(uint32_t)); }
 
     /// Encode
     /// @param data
@@ -29,8 +32,7 @@ namespace Engine {
     /// @param rand
     /// @param size
     /// @return coded data
-    Container::Frames
-    Encode(const Token::Stamp& token, const Container::Frames& data, Size size);
+    Frames Encode(const Stamp& token, const Frames& data, size_t size);
 
     /// Decode
     /// @param token
@@ -39,13 +41,8 @@ namespace Engine {
     /// @param data
     /// @param coefs
     /// @param fields
-    Size Decode(
-        const Token::Stamp& token,
-        Container::Frames code,
-        Size size,
-        Container::Frames& data,
-        Container::Frames& coefs,
-        Container::Frame& fields);
+    size_t
+    Decode(const Stamp& token, Frames code, size_t size, Frames& data, Frames& coefs, Frame& fields);
 
 } // namespace Engine
 } // namespace Codec

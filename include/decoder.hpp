@@ -20,13 +20,8 @@ class Decoder {
     /// constructor
     /// @param capacity
     /// @param token
-    Decoder(Size capacity, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
-      : data_{}
-      , coef_{}
-      , field_(capacity << 1)
-      , token_(token)
-      , capacity_(capacity)
-      , size_{} {
+    Decoder(size_t capacity, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+      : data_{}, coef_{}, field_(capacity << 1), token_(token), capacity_(capacity), size_{} {
         coef_.reserve(capacity << 1);
         data_.reserve(capacity << 1);
     }
@@ -36,9 +31,9 @@ class Decoder {
     /// @param init
     /// @param token
     Decoder(
-        Size capacity,
-        Container::Frames init,
-        Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+      size_t capacity,
+      Container::Frames init,
+      Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
       : Decoder(capacity, token) {
         push(std::move(init));
     }
@@ -109,7 +104,7 @@ class Decoder {
     auto empty() { return (size_ == 0); }
     auto size() { return size_; }
     auto capacity() { return capacity_; }
-    void resize(Size size) {
+    void resize(size_t size) {
         data_.resize(size);
         coef_.resize(size);
         field_.resize(size);
@@ -125,7 +120,7 @@ class Decoder {
 
     /// Context
     Token::Shared::Stamp token_;
-    Size capacity_;
-    Size size_;
+    size_t capacity_;
+    size_t size_;
 };
 } // namespace Codec

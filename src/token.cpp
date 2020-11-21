@@ -13,16 +13,16 @@ namespace Token {
 
     /// Defaults
     const std::map<Type, std::shared_ptr<const Stamp>> DEFAULT{
-        {Type::SPARSE, std::make_shared<const Stamp>(256, Density{31, 127})},
-        {Type::FULL, std::make_shared<const Stamp>(256, Density{255, 255})}};
+      {Type::SPARSE, std::make_shared<const Stamp>(256, Density{31, 127})},
+      {Type::FULL, std::make_shared<const Stamp>(256, Density{255, 255})}};
 
     /// Templates
     const std::map<Type, std::pair<const Density, const Density>> TEMPLATE{
 
-        {Type::STREAM, /***/ {{1, 40}, /***/ {2, 128}}},
-        {Type::SPARSE, /***/ {{1, 20}, /***/ {8, 200}}},
-        {Type::MESSAGE, /**/ {{3, 20}, /***/ {8, 255}}},
-        {Type::FULL, /*****/ {{8, 255}, /**/ {8, 255}}}};
+      {Type::STREAM, /***/ {{1, 40}, /***/ {2, 128}}},
+      {Type::SPARSE, /***/ {{1, 20}, /***/ {8, 200}}},
+      {Type::MESSAGE, /**/ {{3, 20}, /***/ {8, 255}}},
+      {Type::FULL, /*****/ {{8, 255}, /**/ {8, 255}}}};
 
     /// Default Tokens by type
     /// @param type
