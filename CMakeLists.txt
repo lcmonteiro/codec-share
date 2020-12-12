@@ -5,7 +5,7 @@ project(codec-share)
 
 # codec target
 add_library(codec-share
-	./src/engine.cpp
+	./src/coder.cpp
 	./src/token.cpp
 )
 

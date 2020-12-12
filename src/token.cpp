@@ -51,7 +51,7 @@ namespace Token {
             v.second = sparse(gen);
         }
         // return a unique pointer
-        return std::make_unique<const Stamp>(std::move(out));
+        return std::make_shared<const Stamp>(std::move(out));
     }
 } // namespace Token
 } // namespace Codec

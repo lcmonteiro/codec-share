@@ -5,7 +5,8 @@
 #pragma once
 
 #include "container.hpp"
-#include "engine.hpp"
+#include "token.hpp"
+
 namespace Codec {
 
 /// Codec Decoder
@@ -51,28 +52,22 @@ class Decoder {
 
     /// push
     /// @param data
-    Decoder& push(Container::Frame data) {
-        size_ = Engine::Decode(*token_, {std::move(data)}, capacity_, data_, coef_, field_);
-        return *this;
-    }
+    Decoder& push(Container::Frames data);
 
     /// push
     /// @param data
-    Decoder& push(Container::Frames data) {
-        size_ = Engine::Decode(*token_, std::move(data), capacity_, data_, coef_, field_);
-        return *this;
+    Decoder& push(Container::Frame data) {
+        return push({std::move(data)});
     }
 
     /// pop
     /// @return decoded frames
     Container::Frames pop() {
-        // move data
-        auto out{std::move(data_)};
-        // update size
-        out.resize(size_);
-        // reset
-        clear();
-        return out;
+        data_.resize(size_);
+        size_ = 0;
+        coef_.clear();
+        field_.clear();
+        return std::move(data_);
     }
 
     /// Clear data
@@ -119,8 +114,10 @@ class Decoder {
     Container::Frame field_;
 
     /// Context
-    Token::Shared::Stamp token_;
     size_t capacity_;
     size_t size_;
+
+    /// Property
+    Token::Shared::Stamp token_;
 };
 } // namespace Codec

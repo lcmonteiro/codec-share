@@ -5,13 +5,16 @@
 #pragma once
 
 #include "container.hpp"
-#include "engine.hpp"
+#include "token.hpp"
 
 namespace Codec {
 
 /// Encoder
 class Encoder {
   public:
+    /// encode header size
+    const size_t HEADER_SIZE = sizeof(uint32_t);
+
     /// empty constructor
     Encoder() = default;
 
@@ -51,7 +54,7 @@ class Encoder {
 
     /// pop data
     /// @param size
-    auto pop(size_t size) { return Engine::Encode(*token_, data_, size); }
+    Container::Frames pop(size_t size);
 
     /// clear data
     Encoder& clear() {
@@ -76,6 +79,8 @@ class Encoder {
     /// context
     size_t capacity_;
     size_t size_;
+
+    // property
     Token::Shared::Stamp token_;
 };
 } // namespace Codec
