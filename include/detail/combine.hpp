@@ -1,6 +1,9 @@
-/// @file  : solver.hpp
-/// @author: Luis Monteiro
-/// @date  : Created on September 29, 2015, 5:48 PM
+/// ===============================================================================================
+/// @file      : combine.hpp                                               |
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+///                                                                 \__ \  | | |  (   |  |     __/
+/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
+/// ===============================================================================================
 
 #pragma once
 
@@ -9,15 +12,16 @@
 
 #include "gf8.hpp"
 
-namespace builder {
+namespace detail {
 
 template <typename Generator, typename Vector, typename Matrix>
-static inline size_t
+static inline auto
 combine(const Matrix& input, uint32_t seed, uint8_t field, uint8_t sparsity, Vector& output) {
+    using Value = typename Vector::value_type;
     // combine loop
-    auto aux     = Vector{output.capacity()};
+    auto aux     = Vector(output.capacity());
     auto gen     = Generator{seed};
-    auto factor  = uint8_t{0};
+    auto factor  = Value{0};
     auto counter = size_t{0};
     for (auto& frame : input) {
         factor = gen();
@@ -35,4 +39,4 @@ combine(const Matrix& input, uint32_t seed, uint8_t field, uint8_t sparsity, Vec
     }
     return counter;
 }
-} // namespace builder
+} // namespace detail

@@ -1,86 +1,129 @@
-/// @file  : encoder.hpp
-/// @author: Luis Monteiro
-/// @date  : Created on November 30, 2017, 5:48 PM
+/// ===============================================================================================
+/// @file      : encoder.hpp                                               |
+/// @copyright : 2020 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+///                                                                 \__ \  | | |  (   |  |     __/
+/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
+/// ===============================================================================================
 
 #pragma once
+
+#include <random>
 
 #include "container.hpp"
 #include "token.hpp"
 
-namespace Codec {
+#include "detail/combine.hpp"
 
-/// Encoder
-class Encoder {
+namespace codec {
+
+/// encoder
+/// @brief
+template <typename Vector, typename Random = std::random_device, typename Generator = std::minstd_rand0>
+class encoder {
   public:
+    // helpers
+    using Container = container<Vector>;
+    using Value     = typename Vector::value_type;
+
     /// encode header size
     const size_t HEADER_SIZE = sizeof(uint32_t);
 
-    /// empty constructor
-    Encoder() = default;
-
     /// constructor
-    /// @param length
     /// @param capacity
     /// @param token
-    Encoder(
-      size_t length,
-      size_t capacity,
-      Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+    encoder(size_t capacity = 100, token::shared::Stamp token = token::get(token::Type::FULL))
       : data_{}, capacity_{capacity}, token_{token} {}
 
     /// constructor
     /// @param data
     /// @param token
-    Encoder(Container::Frames data, Token::Shared::Stamp token = Token::Default(Token::Type::FULL))
+    encoder(Container data, token::shared::Stamp token = token::get(token::Type::FULL))
       : data_(std::move(data)), capacity_(data.size()), token_(token) {}
 
-    /// Move Constructor
-    Encoder(Encoder&&) = default;
+    /// move constructor
+    encoder(encoder&&) = default;
 
-    /// Move Operator
-    Encoder& operator=(Encoder&&) = default;
+    /// move operator
+    encoder& operator=(encoder&&) = default;
 
-    /// Data
-    /// push data
-    Encoder& push(Container::Frame data) {
-        data_.push(std::move(data));
-        return *this;
-    }
-    Encoder& push(Container::Frames data) {
+    /// push
+    /// @param data
+    void push(Vector data) { data_.push(std::move(data)); }
+
+    /// push
+    /// @param data
+    void push(Container data) {
         for (auto& d : data)
             data_.push(std::move(d));
-        return *this;
     }
 
-    /// pop data
+    /// pop
     /// @param size
-    Container::Frames pop(size_t size);
+    auto pop(size_t size);
 
-    /// clear data
-    Encoder& clear() {
-        data_.clear();
-        return *this;
-    }
+    /// clear
+    void clear() { data_.clear(); }
 
-    /// Iterators
-    /// Forward
+    /// iterators
+    /// @brief forward
     auto begin() const { return data_.begin(); }
     auto end() const { return data_.end(); }
 
-    /// Quantity
+    /// quantity
     auto full() { return (data_.size() >= capacity_); }
     auto size() { return data_.size(); }
-    auto capacity() { return capacity_; }
+    auto capacity() { return std::max(capacity_, data_.size()); }
 
   private:
     /// data
-    Container::Frames data_;
-
+    Container data_;
     /// context
     size_t capacity_;
-    size_t size_;
-
     // property
-    Token::Shared::Stamp token_;
+    token::shared::Stamp token_;
 };
-} // namespace Codec
+
+
+/// push
+/// @param size
+/// @return data
+template <typename Vector, typename Random, typename Generator>
+auto encoder<Vector, Random, Generator>::pop(size_t size) {
+    // coded container
+    Container code;
+    // random generetor
+    Random rand;
+    // sizes
+    auto data_length = data_.length();
+    auto code_length = data_length + HEADER_SIZE;
+    // encode loop
+    for (unsigned int i = 0; i < size; i++) {
+        // seed, field and sparsity
+        auto seed     = uint32_t(0);
+        auto field    = uint8_t(0);
+        auto sparsity = uint8_t(0);
+
+        // create combination
+        auto comb = Vector(code_length + sizeof(int));
+        comb.resize(data_length);
+        do {
+            seed     = rand();
+            field    = (*token_)[uint8_t(seed)].first;
+            sparsity = (*token_)[uint8_t(seed)].second;
+        } while (detail::combine<Generator>(data_, seed, field, sparsity, comb) == 0);
+
+        // insert seed
+        comb.push_back(uint8_t(seed));
+        seed >>= 8;
+        comb.push_back(uint8_t(seed));
+        seed >>= 8;
+        comb.push_back(uint8_t(seed));
+        seed >>= 8;
+        comb.push_back(uint8_t(seed));
+        
+        // save combination
+        code.push_back(std::move(comb));
+    }
+    return code;
+}
+} // namespace codec
