@@ -20,7 +20,15 @@ namespace codec {
 /// ===============================================================================================
 template <typename Vector = std::vector<uint8_t>, typename Size = uint32_t>
 class istream {
+    static constexpr int DEFAULT_CAPACITY = 100;
+
   public:
+    /// constructor
+    /// @param capacity
+    /// @param token
+    explicit istream(token::shared::Stamp token = token::get(token::Type::FULL))
+      : encoder_{DEFAULT_CAPACITY, token} {}
+
     /// set
     /// @param data
     /// @param framesize
@@ -72,7 +80,10 @@ class ostream {
     /// constructor
     /// @param capacity
     /// @param token
-    ostream(size_t capacity = DEFAULT_CAPACITY) : decoder_(capacity) {}
+    ostream(
+      size_t capacity            = DEFAULT_CAPACITY,
+      token::shared::Stamp token = token::get(token::Type::FULL))
+      : decoder_(capacity, token) {}
 
     /// push
     /// @param frame coded
