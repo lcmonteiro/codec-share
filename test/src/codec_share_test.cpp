@@ -3,21 +3,21 @@
 #include <algorithm>
 #include <random>
 
-#include "encoder.hpp"
 #include "decoder.hpp"
+#include "encoder.hpp"
 
 /// CodecEnvironmentParams
 struct CodecEnvironmentParams {
     size_t width;
     size_t height;
     size_t redundancy;
-    Codec::Token::Type token;
+    codec::token::Type token;
 };
 
 /// CodecEnvironment
 class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams> {
   public:
-    Codec::Container::Frames Generate(size_t width, size_t height) {
+    auto generate(size_t width, size_t height) {
         // First create an instance of an engine
         std::random_device rnd;
         // Specify the engine
@@ -28,8 +28,9 @@ class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams>
         std::vector<std::vector<uint8_t>> data;
         for (int i = 0; i < height; ++i) {
             std::vector<uint8_t> vec(width);
-            std::generate(
-                std::begin(vec), std::end(vec), [&dist, &engine]() { return dist(engine); });
+            std::generate(std::begin(vec), std::end(vec), [&dist, &engine]() {
+                return dist(engine);
+            });
             data.emplace_back(std::move(vec));
         }
         return data;
@@ -38,27 +39,21 @@ class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams>
 
 /// Test CodecEnvironment
 TEST_P(CodecEnvironment, positive_test) {
-    auto params = GetParam();
-    // Generate data
-    auto input = Generate(params.width, params.height);
-    // Generate token
-    auto token = Codec::Token::Generate(params.token, 1);
-    // Encoder
-    Codec::Encoder en(input, token);
-    // Encode
-    auto coded = en.pop(params.height + params.redundancy);
-    // Decoder
-    Codec::Decoder de(params.height, coded, token);
-    // Decode
-    auto output = de.pop();
-    // Check
+    auto params  = GetParam();
+    auto input   = generate(params.width, params.height);
+    auto token   = codec::token::generate(params.token, 1);
+    auto encoder = codec::encoder<std::vector<uint8_t>>(input, token);
+    auto coded   = encoder.pop(params.height + params.redundancy);
+    auto decoder = codec::decoder<std::vector<uint8_t>>(params.height, coded, token);
+    auto output  = decoder.pop();
+
     EXPECT_EQ(output, input);
 }
 INSTANTIATE_TEST_SUITE_P(
-    CodecCommon,
-    CodecEnvironment,
-    testing::Values(
-        CodecEnvironmentParams{1000, 50, 1, Codec::Token::Type::FULL},
-        CodecEnvironmentParams{1000, 50, 1, Codec::Token::Type::MESSAGE},
-        CodecEnvironmentParams{1000, 50, 5, Codec::Token::Type::STREAM},
-        CodecEnvironmentParams{1000, 50, 2, Codec::Token::Type::SPARSE}));
+  CodecCommon,
+  CodecEnvironment,
+  testing::Values(
+    CodecEnvironmentParams{1000, 50, 1, codec::token::Type::FULL},
+    CodecEnvironmentParams{1000, 50, 1, codec::token::Type::MESSAGE},
+    CodecEnvironmentParams{1000, 50, 5, codec::token::Type::STREAM},
+    CodecEnvironmentParams{1000, 50, 2, codec::token::Type::SPARSE}));

@@ -1,14 +1,18 @@
 
-/// @file:   stamp.cpp
-/// @author: Luis Monteiro
-/// @date:   Created on November 30, 2015, 5:48 PM
+/// ===============================================================================================
+/// @file      : token.cpp                                                 |
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+///                                                                 \__ \  | | |  (   |  |     __/
+/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
+/// ===============================================================================================
+
 
 #include <random>
 
 #include "token.hpp"
 
-namespace Codec {
-namespace Token {
+namespace codec {
+namespace token {
     using Density = Stamp::value_type;
 
     /// Defaults
@@ -18,7 +22,6 @@ namespace Token {
 
     /// Templates
     const std::map<Type, std::pair<const Density, const Density>> TEMPLATE{
-
       {Type::STREAM, /***/ {{1, 40}, /***/ {2, 128}}},
       {Type::SPARSE, /***/ {{1, 20}, /***/ {8, 200}}},
       {Type::MESSAGE, /**/ {{3, 20}, /***/ {8, 255}}},
@@ -26,12 +29,12 @@ namespace Token {
 
     /// Default Tokens by type
     /// @param type
-    Shared::Stamp Default(Type type) { return DEFAULT.at(type); }
+    shared::Stamp get(Type type) { return DEFAULT.at(type); }
 
     /// Generate Tokens by type
     /// @param type
     /// @param seed
-    Shared::Stamp Generate(Type type, uint64_t seed) {
+    shared::Stamp generate(Type type, uint64_t seed) {
 
         // field mask
         auto mask = [](uint8_t nbits) -> uint8_t { return (1 << nbits) - 1; };
@@ -53,5 +56,5 @@ namespace Token {
         // return a unique pointer
         return std::make_shared<const Stamp>(std::move(out));
     }
-} // namespace Token
-} // namespace Codec
+} // namespace token
+} // namespace codec

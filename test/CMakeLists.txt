@@ -37,5 +37,7 @@ TARGET
 	codec-share 
 TEST_SOURCES 
 	./src/codec_share_test.cpp
+	./src/codec_share_stream_test.cpp
+	./src/codec_share_container_test.cpp
 )
 

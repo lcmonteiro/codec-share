@@ -1,6 +1,9 @@
-/// @file  : token.hpp
-/// @author: Luis Monteiro
-/// @date  : Created on September 29, 2015, 5:48 PM
+/// ===============================================================================================
+/// @file      : token.hpp                                                 |
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+///                                                                 \__ \  | | |  (   |  |     __/
+/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
+/// ===============================================================================================
 
 #pragma once
 
@@ -10,8 +13,8 @@
 #include <vector>
 
 // Codec Token
-namespace Codec {
-namespace Token {
+namespace codec {
+namespace token {
     /// Token Stamp
     ///   is a group of densities
     ///   where a density is a pair of:
@@ -20,7 +23,7 @@ namespace Token {
     using Stamp = std::vector<std::pair<uint8_t, uint8_t>>;
 
     /// shared key
-    namespace Shared {
+    namespace shared {
         using Stamp = std::shared_ptr<const Stamp>;
     }
 
@@ -33,11 +36,11 @@ namespace Token {
 
     /// Default Tokens by type
     /// @param type
-    Shared::Stamp Default(Type type);
+    shared::Stamp get(Type type);
 
     /// Generate Tokens by type
     /// @param type
-    Shared::Stamp Generate(Type type, size_t seed);
+    shared::Stamp generate(Type type, size_t seed);
 
 } // namespace Token
 } // namespace Codec
