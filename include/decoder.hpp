@@ -41,7 +41,6 @@ class decoder {
         coef_.reserve(capacity << 1);
         data_.reserve(capacity << 1);
         field_.reserve(capacity << 1);
-
     }
 
     /// constructor
@@ -70,7 +69,7 @@ class decoder {
 
     /// push
     /// @param data
-    void push(Vector data) { push({std::move(data)}); }
+    void push(Vector data) { push(Container{std::move(data)}); }
 
     /// pop
     /// @return decoded frames

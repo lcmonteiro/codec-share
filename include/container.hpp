@@ -42,7 +42,7 @@ class container : public std::vector<Vector> {
     /// push back
     /// @param container
     template <typename Container>
-    std::enable_if_t<std::is_assignable_v<Vector&, std::decay_t<Container>>, void>
+    std::enable_if_t<std::is_same_v<Vector, std::decay_t<Container>>, void>
     push_back(Container&& container) {
         this->emplace_back(std::forward<Container>(container));
         if (this->front().size() != this->back().size()) {
@@ -54,13 +54,13 @@ class container : public std::vector<Vector> {
     /// push back
     /// @param container
     template <typename Container>
-    std::enable_if_t<std::is_assignable_v<Vector&, typename std::decay_t<Container>::value_type>, void>
+    std::enable_if_t<std::is_same_v<Vector, typename std::decay_t<Container>::value_type>, void>
     push_back(Container container) {
         for (auto& vec : container)
             push_back(std::move(vec));
     }
 
-    /// length 
+    /// length
     /// @return vector size
     auto length() const { return this->at(0).size(); }
 

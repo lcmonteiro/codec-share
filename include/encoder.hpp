@@ -48,7 +48,7 @@ class encoder {
 
     /// push
     /// @param data
-    void push(Vector data) { data_.push(std::move(data)); }
+    void push(Vector data) { data_.push_back(std::move(data)); }
 
     /// push
     /// @param data
