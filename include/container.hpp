@@ -1,11 +1,12 @@
-/// @file container.hpp
-/// @copyright
-///
-/// @author Luis Monteiro
+/// ===============================================================================================
+/// @file      : container.hpp                                             |
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+///                                                                 \__ \  | | |  (   |  |     __/
+/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
+/// ===============================================================================================
 
 #pragma once
 
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 

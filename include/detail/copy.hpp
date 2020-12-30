@@ -62,5 +62,4 @@ copy(Iterator it, uint8_t& num) {
     return it;
 }
 
-
 } // namespace detail
