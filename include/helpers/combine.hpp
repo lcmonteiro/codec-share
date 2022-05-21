@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : combine.hpp                                               |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -12,7 +12,7 @@
 
 #include "gf8.hpp"
 
-namespace detail {
+namespace share::codec::helpers {
 
 template <typename Generator, typename Vector, typename Matrix>
 static inline auto
@@ -39,4 +39,4 @@ combine(const Matrix& input, uint32_t seed, uint8_t field, uint8_t sparsity, Vec
     }
     return counter;
 }
-} // namespace detail
+} // namespace share::codec::helpers

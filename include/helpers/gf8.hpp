@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : gf8.hpp                                                   |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -9,7 +9,7 @@
 
 #include <cstddef>
 
-namespace detail {
+namespace share::codec::helpers {
 namespace gf8 {
     static constexpr int INT_MASK = ~int(sizeof(int) - 1);
     static const int V2P[]        = {
@@ -160,4 +160,4 @@ namespace gf8 {
         return a;
     }
 } // namespace gf8
-} // namespace detail
+} // namespace share::codec::helpers

@@ -1,13 +1,13 @@
 /// ===============================================================================================
 /// @file      : copy.hpp                                               |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
 
 #pragma once
 
-namespace detail {
+namespace share::codec::helpers {
 /// copy
 /// @brief serialize a interger to a iterator
 /// @param num
@@ -62,4 +62,4 @@ copy(Iterator it, uint8_t& num) {
     return it;
 }
 
-} // namespace detail
+} // namespace share::codec::helpers

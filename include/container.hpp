@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : container.hpp                                             |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace codec {
+namespace share::codec {
 
 /// Container
 template <typename Vector>
@@ -70,11 +70,11 @@ class container : public std::vector<Vector> {
     using std::vector<Vector>::emplace;
     using std::vector<Vector>::insert;
 };
-} // namespace codec
+} // namespace share::codec
 
 /// Utilities
 template <typename Vector>
-static std::ostream& operator<<(std::ostream& os, const codec::container<Vector>& max) {
+static std::ostream& operator<<(std::ostream& os, const share::codec::container<Vector>& max) {
     os << "[";
     for (auto vec : max) {
         os << std::endl;

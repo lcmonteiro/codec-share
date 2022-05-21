@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : encoder.hpp                                               |
-/// @copyright : 2020 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2020 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -11,10 +11,9 @@
 
 #include "container.hpp"
 #include "token.hpp"
+#include "helpers/combine.hpp"
 
-#include "detail/combine.hpp"
-
-namespace codec {
+namespace share::codec {
 
 /// encoder
 /// @brief
@@ -110,7 +109,7 @@ auto encoder<Vector, Random, Generator>::pop(size_t size) {
             seed     = rand();
             field    = (*token_)[uint8_t(seed)].first;
             sparsity = (*token_)[uint8_t(seed)].second;
-        } while (detail::combine<Generator>(data_, seed, field, sparsity, comb) == 0);
+        } while (helpers::combine<Generator>(data_, seed, field, sparsity, comb) == 0);
 
         // insert seed
         comb.push_back(uint8_t(seed));
@@ -126,4 +125,4 @@ auto encoder<Vector, Random, Generator>::pop(size_t size) {
     }
     return code;
 }
-} // namespace codec
+} // namespace share::codec

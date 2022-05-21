@@ -11,7 +11,7 @@ struct CodecEnvironmentParams {
     size_t width;
     size_t height;
     size_t redundancy;
-    codec::token::Type token;
+    share::codec::token::Type token;
 };
 
 /// CodecEnvironment
@@ -26,7 +26,7 @@ class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams>
         std::uniform_int_distribution<uint8_t> dist{0, 255};
         // Generate data
         std::vector<std::vector<uint8_t>> data;
-        for (int i = 0; i < height; ++i) {
+        for (auto i = size_t{}; i < height; ++i) {
             std::vector<uint8_t> vec(width);
             std::generate(std::begin(vec), std::end(vec), [&dist, &engine]() {
                 return dist(engine);
@@ -41,10 +41,10 @@ class CodecEnvironment : public ::testing::TestWithParam<CodecEnvironmentParams>
 TEST_P(CodecEnvironment, positive_test) {
     auto params  = GetParam();
     auto input   = generate(params.width, params.height);
-    auto token   = codec::token::generate(params.token, 1);
-    auto encoder = codec::encoder<std::vector<uint8_t>>(input, token);
+    auto token   = share::codec::token::generate(params.token, 1);
+    auto encoder = share::codec::encoder<std::vector<uint8_t>>(input, token);
     auto coded   = encoder.pop(params.height + params.redundancy);
-    auto decoder = codec::decoder<std::vector<uint8_t>>(params.height, coded, token);
+    auto decoder = share::codec::decoder<std::vector<uint8_t>>(params.height, coded, token);
     auto output  = decoder.pop();
 
     EXPECT_EQ(output, input);
@@ -53,7 +53,7 @@ INSTANTIATE_TEST_SUITE_P(
   CodecCommon,
   CodecEnvironment,
   testing::Values(
-    CodecEnvironmentParams{1000, 50, 1, codec::token::Type::FULL},
-    CodecEnvironmentParams{1000, 50, 1, codec::token::Type::MESSAGE},
-    CodecEnvironmentParams{1000, 50, 5, codec::token::Type::STREAM},
-    CodecEnvironmentParams{1000, 50, 2, codec::token::Type::SPARSE}));
+    CodecEnvironmentParams{1000, 50, 1, share::codec::token::Type::FULL},
+    CodecEnvironmentParams{1000, 50, 1, share::codec::token::Type::MESSAGE},
+    CodecEnvironmentParams{1000, 50, 5, share::codec::token::Type::STREAM},
+    CodecEnvironmentParams{1000, 50, 2, share::codec::token::Type::SPARSE}));

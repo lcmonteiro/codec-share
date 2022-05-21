@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : decoder.hpp                                               |
-/// @copyright : 2020 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2020 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -8,11 +8,10 @@
 #pragma once
 
 #include "container.hpp"
+#include "helpers/solve.hpp"
 #include "token.hpp"
 
-#include "detail/solve.hpp"
-
-namespace codec {
+namespace share::codec {
 
 /// definitions
 using Random    = std::random_device;
@@ -37,7 +36,7 @@ class decoder {
     /// @param capacity
     /// @param token
     decoder(size_t capacity, token::shared::Stamp token = token::get(token::Type::FULL))
-      : data_{}, coef_{}, field_{}, token_(token), capacity_(capacity), size_{} {
+      : data_{}, coef_{}, field_{}, capacity_{capacity}, size_{}, token_{token} {
         coef_.reserve(capacity << 1);
         data_.reserve(capacity << 1);
         field_.reserve(capacity << 1);
@@ -165,6 +164,6 @@ void decoder<Vector>::push(Container data) {
         coef_.push_back(std::move(coef));
         field_.push_back(field);
     }
-    size_ = detail::solve(capacity_, field_, coef_, data_);
+    size_ = helpers::solve(capacity_, field_, coef_, data_);
 }
-} // namespace codec
+} // namespace share::codec

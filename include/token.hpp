@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : token.hpp                                                 |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -13,7 +13,7 @@
 #include <vector>
 
 // Codec Token
-namespace codec {
+namespace share::codec {
 namespace token {
     /// Token Stamp
     ///   is a group of densities

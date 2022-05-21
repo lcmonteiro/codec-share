@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : solve.hpp                                                 |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -12,7 +12,7 @@
 
 #include "gf8.hpp"
 
-namespace detail {
+namespace share::codec::helpers {
 
 namespace {
     template <typename Matrix>
@@ -52,7 +52,7 @@ namespace {
 
     template <typename Matrix>
     static inline void reverse_elimination(Matrix& coef, Matrix& data, size_t index) {
-        for (int i = 0; i < index; ++i) {
+        for (auto i = size_t{0}; i < index; ++i) {
             if (coef[i][index] == 0) {
                 continue;
             }
@@ -129,4 +129,4 @@ static size_t solve(size_t size, Vector& field, Matrix& coef, Matrix& data) {
         unification(coef, data, i);
     return n;
 }
-} // namespace detail
+} // namespace share::codec::helpers

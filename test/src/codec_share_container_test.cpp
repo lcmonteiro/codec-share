@@ -4,7 +4,7 @@
 
 
 TEST(codec_shared_container, negative_test) {
-    auto matrix = codec::container<std::vector<uint8_t>>();
+    auto matrix = share::codec::container<std::vector<uint8_t>>();
 
     matrix.push_back(std::vector<uint8_t>(10, 1));
 

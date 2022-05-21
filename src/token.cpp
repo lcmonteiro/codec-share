@@ -1,9 +1,9 @@
 
 /// ===============================================================================================
-/// @file      : token.cpp                                                 |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
-///                                                                 \__ \  | | |  (   |  |     __/
-/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
+/// @file      : token.cpp                                               |                        |
+/// @copyright : 2019 LCMonteiro                                   __|   __ \    _` |   __|  _ \  |
+///                                                               \__ \  | | |  (   |  |     __/  |
+/// @author    : Luis Monteiro                                    ____/ _| |_| \__,_| _|   \___|  |
 /// ===============================================================================================
 
 
@@ -11,7 +11,7 @@
 
 #include "token.hpp"
 
-namespace codec {
+namespace share::codec {
 namespace token {
     using Density = Stamp::value_type;
 
@@ -57,4 +57,4 @@ namespace token {
         return std::make_shared<const Stamp>(std::move(out));
     }
 } // namespace token
-} // namespace codec
+} // namespace share::codec

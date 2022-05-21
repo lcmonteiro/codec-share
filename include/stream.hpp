@@ -1,6 +1,6 @@
 /// ===============================================================================================
 /// @file      : stream.hpp                                                |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \ 
+/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \. 
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
@@ -10,9 +10,9 @@
 #include "decoder.hpp"
 #include "encoder.hpp"
 
-#include "detail/copy.hpp"
+#include "helpers/copy.hpp"
 
-namespace codec {
+namespace share::codec {
 
 /// ===============================================================================================
 /// istream
@@ -39,7 +39,7 @@ class istream {
         auto frame = Vector(size, 0);
 
         // add head information
-        auto fit = detail::copy(Size(data.size()), std::begin(frame));
+        auto fit = helpers::copy(Size(data.size()), std::begin(frame));
         auto dit = std::next(std::begin(data), std::min(data.size(), size - sizeof(size)));
 
         // split data and add to encoder
@@ -51,9 +51,9 @@ class istream {
         }
 
         // add tail information
-        if (std::distance(fit, std::end(frame)) < sizeof(size))
+        if (std::distance(fit, std::end(frame)) < std::ptrdiff_t{sizeof(size)})
             encoder_.push(frame);
-        detail::copy(Size(encoder_.size() + 1), std::rbegin(frame));
+        helpers::copy(Size(encoder_.size() + 1), std::rbegin(frame));
         encoder_.push(frame);
 
         return encoder_.size() + redundancy;
@@ -94,13 +94,13 @@ class ostream {
 
         // check tail
         auto count = Size{0};
-        detail::copy(std::rbegin(decoder_.back()), count);
+        helpers::copy(std::rbegin(decoder_.back()), count);
         if (count != decoder_.size())
             return 0;
 
         // check front
         auto size = Size{0};
-        detail::copy(std::begin(decoder_.front()), size);
+        helpers::copy(std::begin(decoder_.front()), size);
         auto max = (decoder_.size() * decoder_.front().size()) - (2 * sizeof(Size));
         if (size > max)
             return 0;
@@ -120,8 +120,8 @@ class ostream {
             out.reserve(decoder_.size() * dit->size());
 
             auto size = Size(0);
-            detail::copy(std::begin(*dit), size);
-            std::copy(detail::copy(std::begin(*dit), size), std::end(*dit), std::back_inserter(out));
+            helpers::copy(std::begin(*dit), size);
+            std::copy(helpers::copy(std::begin(*dit), size), std::end(*dit), std::back_inserter(out));
             for (++dit; dit != end(decoder_); ++dit)
                 std::copy(std::begin(*dit), std::end(*dit), std::back_inserter(out));
             out.resize(size);
@@ -136,4 +136,4 @@ class ostream {
     decoder<Vector> decoder_;
 };
 
-} // namespace codec
+} // namespace share::codec
