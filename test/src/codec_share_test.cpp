@@ -53,7 +53,7 @@ INSTANTIATE_TEST_SUITE_P(
   CodecCommon,
   CodecEnvironment,
   testing::Values(
-    CodecEnvironmentParams{1000, 50, 1, share::codec::token::Type::FULL},
-    CodecEnvironmentParams{1000, 50, 1, share::codec::token::Type::MESSAGE},
-    CodecEnvironmentParams{1000, 50, 5, share::codec::token::Type::STREAM},
-    CodecEnvironmentParams{1000, 50, 2, share::codec::token::Type::SPARSE}));
+    CodecEnvironmentParams{1000000, 50, 1, share::codec::token::Type::FULL},
+    CodecEnvironmentParams{1000000, 50, 1, share::codec::token::Type::MESSAGE},
+    CodecEnvironmentParams{1000000, 50, 5, share::codec::token::Type::STREAM},
+    CodecEnvironmentParams{1000000, 50, 2, share::codec::token::Type::SPARSE}));

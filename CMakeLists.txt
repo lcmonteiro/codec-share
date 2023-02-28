@@ -15,13 +15,9 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 # entry points
 # -------------------------------------------------------------------
 # codec library
-add_library(codec-share
-	./src/token.cpp
-)
-target_include_directories(codec-share
-PUBLIC
-	./include
-)
+add_library(codec-share INTERFACE)
+target_include_directories(codec-share INTERFACE ./include)
+
 # codec testing 
 if(ENABLE_TESTING)
     enable_testing()
