@@ -1,6 +1,8 @@
 # folders 
 build*/*
 output*/*
+**/build
+**/CMake*
 # files
 *.log
 *.egg
