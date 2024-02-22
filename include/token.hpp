@@ -11,6 +11,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <random>
 
 // Codec Token
 namespace share::codec
@@ -22,9 +23,8 @@ namespace token
 ///   where a density is a pair of:
 ///   - 1º field size
 ///   - 2º sparsity
-using Density = std::pair<uint8_t,uint8_t>;
+using Density = std::pair<uint8_t, uint8_t>;
 using Stamp = std::vector<Density>;
-
 
 /// shared key
 namespace shared
@@ -46,9 +46,15 @@ enum class Type
 };
 
 /// Defaults Stamps foreach Type
-inline const std::map<Type, std::shared_ptr<const Stamp>> DEFAULT{
-	{Type::SPARSE, std::make_shared<const Stamp>(256, Density{31, 127})},
-	{Type::FULL, std::make_shared<const Stamp>(256, Density{255, 255})}};
+inline const std::map<Type, shared::Stamp> DEFAULT{
+	{Type::SPARSE,
+	 std::make_shared<const Stamp>(
+		 256,
+		 Density{31, 127})},
+	{Type::FULL,
+	 std::make_shared<const Stamp>(
+		 256,
+		 Density{255, 255})}};
 
 /// Templates Stamps foreach Type
 inline const std::map<Type, std::pair<const Density, const Density>> TEMPLATE{
@@ -82,10 +88,10 @@ inline shared::Stamp generate(Type type, uint64_t seed)
 	// init stamp
 	auto out = Stamp{256};
 	// build stamp
-	for (auto &v : out)
+	for (auto &[f, s] : out)
 	{
-		v.first = mask(field(gen));
-		v.second = sparse(gen);
+		f = mask(field(gen));
+		s = sparse(gen);
 	}
 	// return a unique pointer
 	return std::make_shared<const Stamp>(std::move(out));
