@@ -4,7 +4,10 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+#ifdef __cpp_lib_execution
 #include <execution>
+#endif
+
 namespace share::codec::helpers
 {
 template <typename Vector, typename Func>
@@ -13,29 +16,56 @@ void apply(Vector &out, const Vector &in, Func op, size_t offset)
 	auto p0 = std::next(std::begin(out), offset);
 	auto p1 = std::next(std::begin(in), offset);
 	auto pe = std::end(out);
+#ifdef __cpp_lib_execution
+	std::transform(
+		std::excution::unseq, p0, pe, p1, p0, op);
+#else
 	std::transform(p0, pe, p1, p0, op);
+#endif
 }
 template <typename Vector, typename Func>
 void apply(Vector &out, const Vector &in, Func op)
 {
-	auto p0 = std::begin(out);
-	auto p1 = std::begin(in);
-	auto pe = std::end(out);
-	std::transform(p0, pe, p1, p0, op);
+	auto p0 = std::cbegin(out);
+	auto p1 = std::cbegin(in);
+	auto pe = std::cend(out);
+	auto po = std::begin(out);
+#ifdef __cpp_lib_execution
+	std::transform(
+		std::excution::unseq, p0, pe, p1, po, op);
+#else
+	std::transform(p0, pe, p1, po, op);
+#endif
 }
 template <typename Vector, typename Type, typename Func>
 void apply(Vector &out, Type in, Func op, size_t offset)
 {
 	auto p0 = std::next(std::begin(out), offset);
 	auto pe = std::end(out);
-	std::transform(p0, pe, p0, [&op, &in](auto &a) { return op(a, in); });
+
+#ifdef __cpp_lib_execution
+	std::transform(
+		std::excution::unseq,
+		p0, pe, p0, [&op, &in](auto &a) { return op(a, in); });
+#else
+	std::transform(
+		p0, pe, p0, [&op, &in](auto &a) { return op(a, in); });
+#endif
 }
 template <typename Vector, typename Type, typename Func>
 void apply(Vector &out, Type in, Func op)
 {
-	auto p0 = std::begin(out);
-	auto pe = std::end(out);
-	std::transform(p0, pe, p0, [&op, &in](auto &a) { return op(a, in); });
+	auto p0 = std::cbegin(out);
+	auto pe = std::cend(out);
+	auto po = std::begin(out);
+#ifdef __cpp_lib_execution
+	std::transform(
+		std::excution::unseq,
+		p0, pe, po, [&op, &in](const auto &a) { return op(a, in); });
+#else
+	std::transform(
+		p0, pe, po, [&op, &in](const auto &a) { return op(a, in); });
+#endif
 }
 
 template <typename Space, typename MatrixA, typename MatrixB>
@@ -56,17 +86,7 @@ inline bool forward_prepare(size_t index, MatrixA &coef, MatrixB &data)
 	}
 	return false;
 }
-template <typename Vector>
-inline void sum(Vector &a, Vector &b)
-{
-	auto *p0 = reinterpret_cast<uint64_t *>(a.data());
-	auto *p1 = reinterpret_cast<uint64_t *>(b.data());
-	auto *pe = reinterpret_cast<uint64_t *>(a.data() + a.size());
-	for (; p0 < pe; ++p0, ++p1)
-	{
-		*p0 ^= *p1;
-	}
-}
+
 template <typename Space, typename MatrixA, typename MatrixB>
 inline void forward_elimination(size_t index, MatrixA &coef, MatrixB &data)
 {
@@ -86,21 +106,10 @@ inline void forward_elimination(size_t index, MatrixA &coef, MatrixB &data)
 			apply(data[i], data[index], Space::Sub);
 			continue;
 		}
-
 		apply(coef[i], factor, Space::Mul, index);
 		apply(coef[i], coef[index], Space::Sub, index);
 		apply(data[i], factor, Space::Mul);
-		//apply(data[i], data[index], Space::Sub);
-		sum(data[i], data[index]);
-		/*
-		apply_(
-			data[i],
-			data[index],
-			[&factor](auto &a, auto &b) {
-				return Space::Sub(
-					Space::Mul(a, factor), b);
-			});
-		*/
+		apply(data[i], data[index], Space::Sub);
 	}
 }
 

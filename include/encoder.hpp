@@ -4,11 +4,9 @@
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
-
 #pragma once
 
-#include <random>
-
+#include "random.hpp"
 #include "container.hpp"
 #include "token.hpp"
 #include "helpers/combine.hpp"
@@ -18,148 +16,116 @@ namespace share::codec
 /// encoder
 /// @brief
 template <
-	typename Vector,
-	typename Random = std::random_device,
-	typename Generator = std::minstd_rand0>
-class encoder
+	typename Frame,
+	typename Token,
+	typename Random,
+	typename Generator>
+class Encoder : Container<Frame>
 {
   public:
-	// helpers
-	using Container = container<Vector>;
-	using Value = typename Vector::value_type;
+	using Data = Container<Frame>;
 
 	/// encode header size
 	const size_t HEADER_SIZE = sizeof(uint32_t);
 
 	/// constructor
-	/// @param capacity
+	/// @param init
 	/// @param token
-	encoder(
-		size_t capacity = 100,
-		token::shared::Stamp token = token::get(token::Type::FULL))
-		: data_{}, capacity_{capacity}, token_{token} {}
+	template <
+		class C,
+		class T = token::Stamp,
+		class R = random::Device,
+		class G = random::gen::Default>
+	Encoder(
+		C &&init,
+		T &&token = token::def::Full(),
+		R &&rand = random::Device(),
+		G &&gen = random::gen::Default())
+		: Data{std::forward<C>(init)},
+		  token_{std::forward<T>(token)},
+		  rand_{std::forward<R>(rand)},
+		  gen_{std::forward<G>(gen)} {}
 
-	/// constructor
-	/// @param data
-	/// @param token
-	encoder(
-		Container data,
-		token::shared::Stamp token = token::get(token::Type::FULL))
-		: data_(std::move(data)), capacity_(data.size()), token_(token) {}
+	Encoder(const Encoder &) = default;
+	Encoder &operator=(const Encoder &) = default;
+	Encoder(Encoder &&) = default;
+	Encoder &operator=(Encoder &&) = default;
 
-	/// move constructor
-	encoder(encoder &&) = default;
-
-	/// move operator
-	encoder &operator=(encoder &&) = default;
-
-	/// push
-	/// @param data
-	void push(Vector data)
-	{
-		data_.push_back(std::move(data));
-	}
-
-	/// push
-	/// @param data
-	void push(Container data)
-	{
-		for (auto &d : data)
-			data_.push(std::move(d));
-	}
-
-	/// pop
-	/// @param size
-	auto pop(size_t size);
-
-	/// clear
-	void clear() { data_.clear(); }
-
-	/// iterators
-	/// @brief forward
-	auto begin() const
-	{
-		return data_.begin();
-	}
-	auto end() const
-	{
-		return data_.end();
-	}
-
-	/// quantity
-	auto full()
-	{
-		return (data_.size() >= capacity_);
-	}
-	auto size()
-	{
-		return data_.size();
-	}
-	auto capacity()
-	{
-		return std::max(capacity_, data_.size());
-	}
+	/// pop - encode process
+	auto pop(size_t);
 
   private:
-	/// data
-	Container data_;
-	/// context
-	size_t capacity_;
-	// property
-	token::shared::Stamp token_;
+	Token token_;
+	Random rand_;
+	Generator gen_;
 };
 
-/// push
+/// pop
 /// @param size
 /// @return data
 template <
-	typename Vector,
+	typename Frame,
+	typename Token,
 	typename Random,
 	typename Generator>
-auto encoder<Vector, Random, Generator>::pop(size_t size)
+auto Encoder<
+	Frame,
+	Token,
+	Random,
+	Generator>::pop(size_t size)
 {
-	using helpers::combine;
-	// coded container
-	Container code;
-	// random generetor
-	Random rand;
+	using helpers::make_comb;
+	// containers
+	auto data = this->view();
+	auto code = Data{size};
 	// sizes
-	auto data_length = data_.length();
-	auto code_length = data_length + HEADER_SIZE;
+	auto data_width = this->width();
+	auto code_width = data_width + HEADER_SIZE;
 	// encode loop
-	for (unsigned int i = 0; i < size; i++)
+	while (size--)
 	{
-		// seed, field and sparsity
-		auto seed = uint32_t(0);
-		auto field = uint8_t(0);
-		auto sparse = uint8_t(0);
-
-		// create combination
-		auto comb = Vector(code_length + sizeof(int));
-		comb.resize(data_length);
-		do
-		{
-			seed = rand();
-			std::tie(field, sparse) = (*token_)[uint8_t(seed)];
-		} while (combine<Generator>(
-					 data_,
-					 seed,
-					 field,
-					 sparse,
-					 comb) == 0);
-
-		// insert seed
-		comb.push_back(uint8_t(seed));
-		seed >>= 8;
-		comb.push_back(uint8_t(seed));
-		seed >>= 8;
-		comb.push_back(uint8_t(seed));
-		seed >>= 8;
-		comb.push_back(uint8_t(seed));
-
-		// save combination
-		code.push_back(std::move(comb));
+		code.push_back(
+			code_width,
+			[&](auto &comb) {
+				// create combination
+				auto seed = rand_();
+				auto &dens = token_[seed];
+				comb.resize(data_width);
+				for (
+					gen_.seed(seed);
+					make_comb(gen_, data, dens, comb) == 0;
+					gen_.seed(seed))
+					;
+				// insert seed
+				push_back(comb, seed);
+			});
 	}
 	return code;
 }
+
+/// Deduction Guides
+template <class C>
+Encoder(C &&)
+	->Encoder<trait::value_t<C>,
+			  token::Stamp,
+			  random::Device,
+			  random::gen::Default>;
+template <class C, class T>
+Encoder(C &&, T &&)
+	->Encoder<trait::value_t<C>,
+			  trait::remove_cvr_t<T>,
+			  random::Device,
+			  random::gen::Default>;
+template <class C, class T, class R>
+Encoder(C &&, T &&, R &&)
+	->Encoder<trait::value_t<C>,
+			  trait::remove_cvr_t<T>,
+			  trait::remove_cvr_t<R>,
+			  random::gen::Default>;
+template <class C, class T, class R, class G>
+Encoder(C &&, T &&, R &&, G &&)
+	->Encoder<trait::value_t<C>,
+			  trait::remove_cvr_t<T>,
+			  trait::remove_cvr_t<R>,
+			  trait::remove_cvr_t<G>>;
 } // namespace share::codec

@@ -4,11 +4,10 @@
 #include <iostream>
 #include <chrono>
 
-#include "decoder_.hpp"
-#include "encoder_.hpp"
-#include "container_.hpp"
+#include "_decoder.hpp"
+#include "_encoder.hpp"
 
-auto generate(size_t width, size_t height)
+static auto generate(size_t width, size_t height)
 {
 	std::random_device rnd;
 	std::mt19937 engine{rnd()};
@@ -25,7 +24,7 @@ auto generate(size_t width, size_t height)
 	return data;
 }
 
-auto print = [](const auto &matrix) {
+static auto print = [](const auto &matrix) {
 	for (auto &vector : matrix)
 	{
 		for (auto &value : vector)
@@ -42,9 +41,11 @@ auto print = [](const auto &matrix) {
 
 using namespace share::codec;
 using namespace std::chrono;
-using Frame = std::vector<uint8_t>;
+using Container = std::vector<uint8_t>;
+using Encoder = share::codec::encoder<Container>;
+using Decoder = share::codec::decoder<Container>;
 
-int test_codec_(
+int _test_codec(
 	int n_seeds,
 	int width,
 	int height = 40,
@@ -55,22 +56,17 @@ int test_codec_(
 
 	for (auto seed = 0; seed < n_seeds; ++seed)
 	{
-		auto stamp = token_::gen::Full(seed);
-		auto rand = random::gen::Default(seed);
-
 		auto input = generate(width, height);
-		//std::cout << "input =" << std::endl;
-		//print(input);
-		auto encoder = Encoder(input, stamp,rand);
+		auto token = _token::generate(_token::Type::FULL, seed);
+		auto encoder = Encoder(input, token);
 		auto code = encoder.pop(height + redundancy);
-		//std::cout << "code =" << std::endl;
-		//print(code);
-		auto decoder = Decoder(height, stamp);
-		decoder.push(code);
+		auto decoder = Decoder(height, code, token);
 		auto output = decoder.pop();
-		//std::cout << "output=" << std::endl;
+		//print(input);
+		//print(code);
 		//print(output);
-		success_count += int(input == output.view());
+
+		success_count += int(input == output);
 	}
 	auto stop_time = high_resolution_clock::now();
 	auto delta_time =

@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "gf8.hpp"
+#include "_gf8.hpp"
 
 namespace share::codec::helpers {
 

@@ -1,49 +1,80 @@
 /// ===============================================================================================
 /// @file      : combine.hpp                                               |
-/// @copyright : 2019 LCMonteiro                                     __|   __ \    _` |   __|  _ \.
+/// @copyright : 2019 lcmonteiro                                     __|   __ \    _` |   __|  _ \.
 ///                                                                 \__ \  | | |  (   |  |     __/
 /// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
 /// ===============================================================================================
 
 #pragma once
 
+#include <algorithm>
+#include <execution>
 #include <cstddef>
 #include <cstdint>
 
 #include "gf8.hpp"
+#include "token.hpp"
 
-namespace share::codec::helpers
+namespace share::codec
+{
+namespace helpers
 {
 template <
-	typename Generator,
-	typename Vector,
-	typename Matrix>
-static inline auto combine(
+	class Generator,
+	class Matrix,
+	class Density,
+	class Vector>
+inline auto make_comb(
+	Generator &generator,
 	const Matrix &input,
-	uint32_t seed, uint8_t field, uint8_t sparsity,
-	Vector &output)
+	const Density &density, 
+	Vector &output) -> size_t
 {
-	using Value = typename Vector::value_type;
+	using gf8 = share::codec::gf8::Space;
+	using value_t = typename Vector::value_type;
 	// combine loop
-	auto aux = Vector(output.capacity());
-	auto gen = Generator{seed};
-	auto factor = Value{0};
-	auto counter = size_t{0};
-	for (auto &frame : input)
+	auto cnt = size_t{};
+	auto &[field, sparsity] = density;
+	for (const auto &frame : input)
 	{
-		factor = gen();
+		auto factor = value_t(generator());
 		if (factor > sparsity)
 			continue;
 		factor &= field;
 		if (factor == 0)
 			continue;
-		// copy for calculation process
-		aux.assign(frame.begin(), frame.end());
 		// calculation process (Y += Xn * Cn)
-		gf8::sum(output, gf8::mul(aux, factor));
+		std::transform(
+			std::cbegin(frame),
+			std::cend(frame),
+			std::cbegin(output),
+			std::begin(output),
+			[&factor](auto a, auto b) {
+				return gf8::Add(gf8::Mul(a, factor), b);
+			});
 		// track number of merges
-		++counter;
+		++cnt;
 	}
-	return counter;
+	return cnt;
 }
-} // namespace share::codec::helpers
+template <
+	class Generator,
+	class Density,
+	class Vector>
+inline auto make_coef(
+	Generator &generator,
+	Density &density,
+	Vector &output)
+{
+	using Value = typename Vector::value_type;
+	auto &[field, sparsity] = density;
+	for (auto &val : output)
+	{
+		auto factor = Value(generator());
+		if (factor > sparsity)
+			continue;
+		val = (factor & field);
+	}
+}
+} // namespace helpers
+} // namespace share::codec
