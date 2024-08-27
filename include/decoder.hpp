@@ -1,9 +1,9 @@
-/// ===============================================================================================
-/// @file      : decoder.hpp                                               |
-/// @copyright : 2020 lcmonteiro                                     __|   __ \    _` |   __|  _ \.
-///                                                                 \__ \  | | |  (   |  |     __/
-/// @author    : Luis Monteiro                                      ____/ _| |_| \__,_| _|   \___|
-/// ===============================================================================================
+/// ===========================================================
+/// @file      : decoder.hpp              |
+/// @copyright : 2020 lcmonteiro  __|   __ \    _` |   __|  _ \.
+///                              \__ \  | | |  (   |  |     __/
+/// @author    : Luis Monteiro   ____/ _| |_| \__,_| _|   \___|
+/// ===========================================================
 #include "random.hpp"
 #include "container.hpp"
 #include "token.hpp"
@@ -13,7 +13,7 @@
 
 namespace share::codec
 {
-/// encoder
+/// decoder
 /// @brief
 template <
 	class Frame,
@@ -37,7 +37,7 @@ class Decoder
 	template <
 		class T = token::Stamp,
 		class R = random::Device,
-		class G = random::gen::Default>
+		class G = random::gen::Default<>>
 	Decoder(
 		size_t height,
 		T &&token = token::def::Full(),
@@ -61,15 +61,16 @@ class Decoder
 	auto push(T &&data)
 	{
 		using helpers::make_coef;
+		using seed_t = typename Generator::seed_t;
 		data_.push_back(
 			data,
 			[this](auto &frame) {
 				coef_.push_back(
 					capacity_,
 					[this, &frame](auto&coef) {
-						auto seed = pop_back<uint32_t>(frame);
+						auto seed = pop_back<seed_t>(frame);
 						auto &dens = token_[seed];
-						gen_.seed(seed);
+						gen_.seed(seed_t(seed));
 						make_coef(gen_, dens, coef);
 					});
 			});
@@ -104,12 +105,12 @@ class Decoder
 Decoder(size_t)
 	->Decoder<std::vector<uint8_t>,
 			  token::Stamp,
-			  random::gen::Default>;
+			  random::gen::Default<>>;
 template <class T>
 Decoder(size_t, T &&)
 	->Decoder<std::vector<uint8_t>,
 			  trait::remove_cvr_t<T>,
-			  random::gen::Default>;
+			  random::gen::Default<>>;
 template <class T, class G>
 Decoder(size_t, T &&, G &&)
 	->Decoder<std::vector<uint8_t>,

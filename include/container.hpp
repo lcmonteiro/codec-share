@@ -27,7 +27,7 @@ class Container : protected std::vector<Frame>
 	/// concepts
 	template <class T>
 	using frame =
-		trait::if_constructible<Frame,T>;
+		trait::if_constructible<Frame, T>;
 	template <class T>
 	using frames =
 		trait::if_convertible<
@@ -114,7 +114,7 @@ class Container : protected std::vector<Frame>
 	}
 
   protected:
-  template <class F, class T, class R, class G>
+	template <class F, class T, class R, class G>
 	friend class Encoder;
 	template <class F, class T, class G>
 	friend class Decoder;
@@ -146,7 +146,7 @@ auto pop_back(F &frame)
 	frame.pop_back();
 	if constexpr (sizeof(T) == 4)
 		return seed;
-	static_assert(true, "pop_back: failed");
+	static_assert(sizeof(T) <= 4, "pop_back: failed");
 }
 template <class F, class T>
 void push_back(F &frame, T value)
@@ -164,6 +164,6 @@ void push_back(F &frame, T value)
 	frame.push_back(uint8_t(value));
 	if constexpr (sizeof(T) == 4)
 		return;
-	static_assert(true, "push_back: failed");
+	static_assert(sizeof(T) <= 4, "push_back: failed");
 }
 } // namespace share::codec

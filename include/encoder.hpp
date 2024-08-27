@@ -25,9 +25,6 @@ class Encoder : Container<Frame>
   public:
 	using Data = Container<Frame>;
 
-	/// encode header size
-	const size_t HEADER_SIZE = sizeof(uint32_t);
-
 	/// constructor
 	/// @param init
 	/// @param token
@@ -35,7 +32,7 @@ class Encoder : Container<Frame>
 		class C,
 		class T = token::Stamp,
 		class R = random::Device,
-		class G = random::gen::Default>
+		class G = random::gen::Default<>>
 	Encoder(
 		C &&init,
 		T &&token = token::def::Full(),
@@ -75,12 +72,16 @@ auto Encoder<
 	Generator>::pop(size_t size)
 {
 	using helpers::make_comb;
+	using seed_t = typename Generator::seed_t;
+	
 	// containers
 	auto data = this->view();
 	auto code = Data{size};
 	// sizes
-	auto data_width = this->width();
-	auto code_width = data_width + HEADER_SIZE;
+	const auto seed_width = sizeof(seed_t);
+	const auto data_width = this->width();
+	const auto code_width = data_width + seed_width;
+	
 	// encode loop
 	while (size--)
 	{
@@ -88,16 +89,16 @@ auto Encoder<
 			code_width,
 			[&](auto &comb) {
 				// create combination
-				auto seed = rand_();
-				auto &dens = token_[seed];
+				const auto seed = rand_();
+				const auto &dens = token_[seed];
 				comb.resize(data_width);
 				for (
-					gen_.seed(seed);
+					gen_.seed(seed_t(seed));
 					make_comb(gen_, data, dens, comb) == 0;
-					gen_.seed(seed))
+					gen_.seed(seed_t(seed)))
 					;
 				// insert seed
-				push_back(comb, seed);
+				push_back(comb, seed_t(seed));
 			});
 	}
 	return code;
@@ -109,19 +110,19 @@ Encoder(C &&)
 	->Encoder<trait::value_t<C>,
 			  token::Stamp,
 			  random::Device,
-			  random::gen::Default>;
+			  random::gen::Default<>>;
 template <class C, class T>
 Encoder(C &&, T &&)
 	->Encoder<trait::value_t<C>,
 			  trait::remove_cvr_t<T>,
 			  random::Device,
-			  random::gen::Default>;
+			  random::gen::Default<>>;
 template <class C, class T, class R>
 Encoder(C &&, T &&, R &&)
 	->Encoder<trait::value_t<C>,
 			  trait::remove_cvr_t<T>,
 			  trait::remove_cvr_t<R>,
-			  random::gen::Default>;
+			  random::gen::Default<>>;
 template <class C, class T, class R, class G>
 Encoder(C &&, T &&, R &&, G &&)
 	->Encoder<trait::value_t<C>,
