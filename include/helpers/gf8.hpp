@@ -9,6 +9,8 @@
 
 #include <cstdint>
 #include <array>
+#include <algorithm>
+#include <execution>
 
 namespace share::codec::gf8
 {

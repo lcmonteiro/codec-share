@@ -4,48 +4,45 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
-#ifdef __cpp_lib_execution
 #include <execution>
-#endif
 
 namespace share::codec::helpers
 {
 template <typename Vector, typename Func>
-void apply(Vector &out, const Vector &in, Func op, size_t offset)
+inline void apply(Vector &out, const Vector &in, Func op, size_t offset)
 {
-	auto p0 = std::next(std::begin(out), offset);
-	auto p1 = std::next(std::begin(in), offset);
-	auto pe = std::end(out);
+	const auto p0 = std::next(std::begin(out), offset);
+	const auto p1 = std::next(std::begin(in), offset);
+	const auto pe = std::end(out);
 #ifdef __cpp_lib_execution
 	std::transform(
-		std::excution::unseq, p0, pe, p1, p0, op);
+		std::execution::unseq, p0, pe, p1, p0, op);
 #else
 	std::transform(p0, pe, p1, p0, op);
 #endif
 }
 template <typename Vector, typename Func>
-void apply(Vector &out, const Vector &in, Func op)
+inline void apply(Vector &out, const Vector &in, Func op)
 {
-	auto p0 = std::cbegin(out);
-	auto p1 = std::cbegin(in);
-	auto pe = std::cend(out);
-	auto po = std::begin(out);
+	const auto p0 = std::cbegin(out);
+	const auto p1 = std::cbegin(in);
+	const auto pe = std::cend(out);
+	const auto po = std::begin(out);
 #ifdef __cpp_lib_execution
 	std::transform(
-		std::excution::unseq, p0, pe, p1, po, op);
+		std::execution::unseq, p0, pe, p1, po, op);
 #else
 	std::transform(p0, pe, p1, po, op);
 #endif
 }
 template <typename Vector, typename Type, typename Func>
-void apply(Vector &out, Type in, Func op, size_t offset)
+inline void apply(Vector &out, Type in, Func op, size_t offset)
 {
-	auto p0 = std::next(std::begin(out), offset);
-	auto pe = std::end(out);
-
+	const auto p0 = std::next(std::begin(out), offset);
+	const auto pe = std::end(out);
 #ifdef __cpp_lib_execution
 	std::transform(
-		std::excution::unseq,
+		std::execution::unseq,
 		p0, pe, p0, [&op, &in](auto &a) { return op(a, in); });
 #else
 	std::transform(
@@ -53,14 +50,14 @@ void apply(Vector &out, Type in, Func op, size_t offset)
 #endif
 }
 template <typename Vector, typename Type, typename Func>
-void apply(Vector &out, Type in, Func op)
+inline void apply(Vector &out, Type in, Func op)
 {
-	auto p0 = std::cbegin(out);
-	auto pe = std::cend(out);
-	auto po = std::begin(out);
+	const auto p0 = std::cbegin(out);
+	const auto pe = std::cend(out);
+	const auto po = std::begin(out);
 #ifdef __cpp_lib_execution
 	std::transform(
-		std::excution::unseq,
+		std::execution::unseq,
 		p0, pe, po, [&op, &in](const auto &a) { return op(a, in); });
 #else
 	std::transform(
@@ -133,8 +130,8 @@ inline void backward_elimination(size_t index, MatrixA &coef, MatrixB &data)
 			continue;
 		}
 		apply(coef[index], factor, Space::Mul, index);
-		apply(data[index], factor, Space::Mul);
 		apply(coef[i], coef[index], Space::Sub, index);
+		apply(data[index], factor, Space::Mul);
 		apply(data[i], data[index], Space::Sub);
 	}
 }

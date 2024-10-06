@@ -67,7 +67,7 @@ class Decoder
 			[this](auto &frame) {
 				coef_.push_back(
 					capacity_,
-					[this, &frame](auto&coef) {
+					[this, &frame](auto &coef) {
 						auto seed = pop_back<seed_t>(frame);
 						auto &dens = token_[seed];
 						gen_.seed(seed_t(seed));
@@ -89,6 +89,13 @@ class Decoder
 		data_ = Data{capacity_};
 		size_ = 0;
 		return tmp;
+	}
+
+	void clear()
+	{
+		coef_ = Data{capacity_};
+		data_ = Data{capacity_};
+		size_ = 0;
 	}
 
   private:

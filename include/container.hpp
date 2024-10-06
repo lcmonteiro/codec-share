@@ -65,10 +65,11 @@ class Container : protected std::vector<Frame>
 	template <class T, frame<T> = 0>
 	void push_back(T &&data)
 	{
-		this->emplace_back(std::forward<T>(data));
-		if (this->front().size() != this->back().size())
+		auto &self = this->data();
+		self.emplace_back(std::forward<T>(data));
+		if (self.front().size() != self.back().size())
 		{
-			this->pop_back();
+			self.pop_back();
 			throw RangeError("unexpected size");
 		}
 	}
@@ -77,11 +78,12 @@ class Container : protected std::vector<Frame>
 	template <class T, class F, frame<T> = 0>
 	void push_back(T &&data, const F &format)
 	{
-		this->emplace_back(std::forward<T>(data));
-		format(this->back());
-		if (this->front().size() != this->back().size())
+		auto &self = this->data();
+		self.emplace_back(std::forward<T>(data));
+		format(self.back());
+		if (self.front().size() != self.back().size())
 		{
-			this->pop_back();
+			self.pop_back();
 			throw RangeError("unexpected size");
 		}
 	}
@@ -99,6 +101,38 @@ class Container : protected std::vector<Frame>
 		for (auto &&vec : data)
 			push_back(vec, format);
 	}
+	/// pop back
+	/// @param container
+	auto push_front(Container &&container)
+	{
+		auto &odata = data();
+		auto &idata = container.data();
+		auto isize = idata.size();
+		auto iend = std::end(idata);
+		auto ibeg = std::begin(idata);
+		odata.insert(
+			std::begin(odata),
+			std::make_move_iterator(ibeg),
+			std::make_move_iterator(iend));
+		return isize;
+	}
+	/// pop back
+	/// @param container
+	auto pop_back(size_t n)
+	{
+		Container out;
+		auto &odata = out.data();
+		auto &idata = data();
+		auto isize = idata.size();
+		auto iend = std::end(idata);
+		auto ibeg = std::prev(iend, std::min(n, isize));
+		odata.insert(
+			std::end(odata),
+			std::make_move_iterator(ibeg),
+			std::make_move_iterator(iend));
+		idata.erase(ibeg, iend);
+		return out;
+	}
 	/// shape
 	auto width() const
 	{
@@ -108,6 +142,7 @@ class Container : protected std::vector<Frame>
 	{
 		return this->size();
 	};
+	/// views
 	auto &view() const
 	{
 		return static_cast<const Data &>(*this);
