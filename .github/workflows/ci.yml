@@ -54,6 +54,16 @@ jobs:
             exit 1
           fi
           sha256sum wasm/codec-share.wasm
+      - name: package
+        run: |
+          pip install build
+          python -m build --outdir dist
+      - name: package test
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m venv venv
+          venv/bin/pip install "$GITHUB_WORKSPACE"/dist/*.whl
+          venv/bin/python -c "from codec_share import Codec; c = Codec(); s = c.stamp(1); assert c.open(s, c.seal(s, b'ok', 2, 3)[1:], 2) == b'ok'"
       - name: artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,3 +72,4 @@ jobs:
           path: |
             wasm/codec-share.wasm
             wasm/codec_share.py
+            dist/

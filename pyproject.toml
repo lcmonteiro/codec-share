@@ -1,0 +1,38 @@
+# =======================================================================================
+# codec-share python package: the wasm binding and the committed codec-share.wasm
+#
+#   wasm/codec_share.py    -> codec_share/__init__.py
+#   wasm/codec-share.wasm  -> codec_share/codec-share.wasm
+#
+# released as a wheel on the GitHub release of each v<version> tag (see .github/workflows)
+# =======================================================================================
+[project]
+name = "codec-share"
+version = "0.1.0"
+description = "codec-share erasure codec, as WebAssembly with a python binding."
+readme = "readme.md"
+requires-python = ">=3.9"
+license = { file = "license" }
+authors = [
+    { name = "Luis Monteiro", email = "monteiro.lcm@gmail.com" },
+]
+dependencies = [
+    "wasmtime>=20",
+]
+
+[project.urls]
+Repository = "https://github.com/lcmonteiro/codec-share"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.hatch.build.targets.wheel.force-include]
+"wasm/codec_share.py" = "codec_share/__init__.py"
+"wasm/codec-share.wasm" = "codec_share/codec-share.wasm"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["pyproject.toml", "readme.md", "license", "wasm"]

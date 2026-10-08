@@ -23,6 +23,23 @@ python -m unittest discover -s wasm                    # binding tests
 [wasi-sdk 25](https://github.com/WebAssembly/wasi-sdk/releases/tag/wasi-sdk-25) is the only
 build requirement.
 
+### Python package
+
+`pyproject.toml` packages the binding with the committed module as `codec_share`. Each
+`v<version>` tag (matching the version in `pyproject.toml`) publishes the wheel as a
+GitHub release asset, so projects depend on it without git or a wasm toolchain:
+
+```toml
+# pyproject.toml of the consumer (uv)
+dependencies = ["codec-share"]
+
+[tool.uv.sources]
+codec-share = { url = "https://github.com/lcmonteiro/codec-share/releases/download/v0.1.0/codec_share-0.1.0-py3-none-any.whl" }
+```
+
+To release: bump `version` in `pyproject.toml`, merge, then
+`git tag v<version> && git push origin v<version>`.
+
 ```python
 from codec_share import Codec
 

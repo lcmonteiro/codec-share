@@ -6,3 +6,4 @@ output*/*
 *.egg
 *.egg-info
 __pycache__/
+dist/
