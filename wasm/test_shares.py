@@ -38,8 +38,9 @@ class SharesTest(unittest.TestCase):
     def test_pin(self):
         self.assertEqual(shares.stamp_from_pin('1234'), shares.stamp_from_pin('1234'))
         parts = shares.split(DATA, shares.stamp_from_pin('1234'), 2, 2)
-        with self.assertRaises(shares.StampError):
-            shares.join(parts, shares.stamp_from_pin('4321'))
+        for pin in ('4321', '0', 'wrong'):
+            with self.assertRaisesRegex(shares.StampError, 'wrong pin or stamp'):
+                shares.join(parts, shares.stamp_from_pin(pin))
 
     def test_missing_shares(self):
         parts = shares.split(DATA, shares.new_stamp(), 3, 3)

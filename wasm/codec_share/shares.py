@@ -133,8 +133,8 @@ def join(shares, stamp):
         raise SharesError(f'{needed} of {count} shares are needed, got {len(frames)}')
     try:
         return codec().open(stamp, frames.values(), needed)
-    except SharesError:
-        # split verifies the shares are independent, so this comes from a wrong stamp
+    except (SharesError, StampError):
+        # split verifies the shares are independent, so both come from a wrong stamp
         raise StampError('shares do not open, wrong pin or stamp') from None
 
 
