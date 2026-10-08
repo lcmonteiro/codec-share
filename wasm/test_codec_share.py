@@ -1,16 +1,15 @@
 # =======================================================================================
 # codec-share.wasm tests:  python -m unittest discover -s wasm
-#   the module is looked up in $CODEC_SHARE_WASM, then build/codec-share.wasm
+#   tests $CODEC_SHARE_WASM, by default the committed wasm/codec-share.wasm
 # =======================================================================================
 import os
 import unittest
 from itertools import combinations
-from pathlib import Path
 
+from codec_share import WASM as DEFAULT_WASM
 from codec_share import Codec, CodecError, SharesError, StampError
 
-WASM = os.environ.get(
-    'CODEC_SHARE_WASM', Path(__file__).resolve().parents[1] / 'build' / 'codec-share.wasm')
+WASM = os.environ.get('CODEC_SHARE_WASM', DEFAULT_WASM)
 
 
 class CodecShareTest(unittest.TestCase):
