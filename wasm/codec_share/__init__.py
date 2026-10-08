@@ -1,7 +1,8 @@
 # =======================================================================================
 # codec-share python binding
 #
-#   runs codec-share.wasm (see codec_share.cpp) with wasmtime: pip install wasmtime
+#   runs codec-share.wasm (see wasm/codec_share.cpp) with wasmtime: pip install wasmtime
+#   share files (split, join, edit) are in codec_share.shares
 #
 #   codec  = Codec()                          # loads codec-share.wasm next to this file
 #   stamp  = codec.stamp(seed)                # or the 512 bytes of a stamp file

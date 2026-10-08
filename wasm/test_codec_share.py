@@ -1,6 +1,6 @@
 # =======================================================================================
 # codec-share.wasm tests:  python -m unittest discover -s wasm
-#   tests $CODEC_SHARE_WASM, by default the committed wasm/codec-share.wasm
+#   tests $CODEC_SHARE_WASM, by default the committed wasm/codec_share/codec-share.wasm
 # =======================================================================================
 import os
 import unittest

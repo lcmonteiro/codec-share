@@ -1,8 +1,6 @@
 # =======================================================================================
-# codec-share python package: the wasm binding and the committed codec-share.wasm
-#
-#   wasm/codec_share.py    -> codec_share/__init__.py
-#   wasm/codec-share.wasm  -> codec_share/codec-share.wasm
+# codec-share python package (wasm/codec_share): the wasm binding with the committed
+# codec-share.wasm, and the share files (split, join, edit) with the codec-share command
 #
 # released as a wheel on the GitHub release of each v<version> tag (see .github/workflows)
 # =======================================================================================
@@ -20,6 +18,9 @@ dependencies = [
     "wasmtime>=20",
 ]
 
+[project.scripts]
+codec-share = "codec_share.shares:main"
+
 [project.urls]
 Repository = "https://github.com/lcmonteiro/codec-share"
 
@@ -28,11 +29,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-bypass-selection = true
-
-[tool.hatch.build.targets.wheel.force-include]
-"wasm/codec_share.py" = "codec_share/__init__.py"
-"wasm/codec-share.wasm" = "codec_share/codec-share.wasm"
+packages = ["wasm/codec_share"]
 
 [tool.hatch.build.targets.sdist]
-only-include = ["pyproject.toml", "readme.md", "license", "wasm"]
+only-include = ["pyproject.toml", "readme.md", "license", "wasm", "include"]

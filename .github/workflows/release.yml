@@ -37,8 +37,8 @@ jobs:
       - name: wasm up to date
         run: |
           ./wasm/build.sh
-          if ! git diff --quiet -- wasm/codec-share.wasm; then
-            echo "::error file=wasm/codec-share.wasm::wasm/codec-share.wasm is not the build of the sources"
+          if ! git diff --quiet -- wasm/codec_share/codec-share.wasm; then
+            echo "::error file=wasm/codec_share/codec-share.wasm::wasm/codec_share/codec-share.wasm is not the build of the sources"
             exit 1
           fi
       - name: test
