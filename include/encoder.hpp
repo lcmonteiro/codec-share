@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <random>
 
 #include "container.hpp"
@@ -58,7 +59,8 @@ class encoder {
 
     /// pop
     /// @param size
-    auto pop(size_t size);
+    /// @param merges minimum number of data frames merged in each coded frame
+    auto pop(size_t size, size_t merges = 1);
 
     /// clear
     void clear() { data_.clear(); }
@@ -83,15 +85,18 @@ class encoder {
 };
 
 
-/// push
+/// pop
 /// @param size
+/// @param merges
 /// @return data
 template <typename Vector, typename Random, typename Generator>
-auto encoder<Vector, Random, Generator>::pop(size_t size) {
+auto encoder<Vector, Random, Generator>::pop(size_t size, size_t merges) {
     // coded container
     Container code;
     // random generetor
     Random rand;
+    // merges are limited by the available data
+    merges = std::max(size_t{1}, std::min(merges, data_.size()));
     // sizes
     auto data_length = data_.length();
     auto code_length = data_length + HEADER_SIZE;
@@ -106,10 +111,11 @@ auto encoder<Vector, Random, Generator>::pop(size_t size) {
         auto comb = Vector(code_length + sizeof(int));
         comb.resize(data_length);
         do {
+            std::fill(comb.begin(), comb.end(), 0);
             seed     = rand();
             field    = (*token_)[uint8_t(seed)].first;
             sparsity = (*token_)[uint8_t(seed)].second;
-        } while (helpers::combine<Generator>(data_, seed, field, sparsity, comb) == 0);
+        } while (helpers::combine<Generator>(data_, seed, field, sparsity, comb) < merges);
 
         // insert seed
         comb.push_back(uint8_t(seed));

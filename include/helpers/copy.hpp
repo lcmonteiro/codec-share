@@ -15,16 +15,16 @@ namespace share::codec::helpers {
 template <typename Iterator>
 std::enable_if_t<std::is_same_v<typename std::iterator_traits<Iterator>::value_type, uint8_t>, Iterator>
 copy(uint32_t num, Iterator it) {
-    *it = uint8_t(num), ++it, num <<= 8;
-    *it = uint8_t(num), ++it, num <<= 8;
-    *it = uint8_t(num), ++it, num <<= 8;
+    *it = uint8_t(num), ++it, num >>= 8;
+    *it = uint8_t(num), ++it, num >>= 8;
+    *it = uint8_t(num), ++it, num >>= 8;
     *it = uint8_t(num), ++it;
     return it;
 }
 template <typename Iterator>
 std::enable_if_t<std::is_same_v<typename std::iterator_traits<Iterator>::value_type, uint8_t>, Iterator>
 copy(uint16_t num, Iterator it) {
-    *it = uint8_t(num), ++it, num <<= 8;
+    *it = uint8_t(num), ++it, num >>= 8;
     *it = uint8_t(num), ++it;
     return it;
 }
