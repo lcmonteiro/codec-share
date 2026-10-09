@@ -25,7 +25,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
   # -------------------------------------------------------------------------------------
-  # wasm gate: the committed wasm/codec_share/codec-share.wasm must be the build of the sources
+  # wasm gate: the committed wasm/codec-share.wasm must be the build of the sources
   # -------------------------------------------------------------------------------------
   wasm:
     runs-on: ubuntu-24.04
@@ -40,30 +40,30 @@ jobs:
           echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux" >> "$GITHUB_ENV"
       - name: rebuild
         run: ./wasm/build.sh
+      - name: up to date
+        run: |
+          if ! git diff --quiet -- wasm/codec-share.wasm; then
+            echo "::error file=wasm/codec-share.wasm::wasm/codec-share.wasm is not the build of the sources: run ./wasm/build.sh (wasi-sdk ${WASI_SDK_VERSION}) and commit it, or take it from the codec-share-wasm artifact of this run"
+            exit 1
+          fi
+          sha256sum wasm/codec-share.wasm
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: test
+      - name: python binding test
+        working-directory: wasm/bindings/python
         run: |
-          pip install wasmtime
-          python -m unittest discover -s wasm -v
-      - name: up to date
-        run: |
-          if ! git diff --quiet -- wasm/codec_share/codec-share.wasm; then
-            echo "::error file=wasm/codec_share/codec-share.wasm::wasm/codec_share/codec-share.wasm is not the build of the sources: run ./wasm/build.sh (wasi-sdk ${WASI_SDK_VERSION}) and commit it, or take it from the codec-share-wasm artifact of this run"
-            exit 1
-          fi
-          sha256sum wasm/codec_share/codec-share.wasm
-      - name: package
+          pip install wasmtime click
+          python -m unittest discover -s tests -v
+      - name: python package
         run: |
           pip install build
-          python -m build --outdir dist
-      - name: package test
+          python -m build wasm/bindings/python --outdir dist
+      - name: python package test
         working-directory: ${{ runner.temp }}
         run: |
           python -m venv venv
           venv/bin/pip install "$GITHUB_WORKSPACE"/dist/*.whl
-          venv/bin/python -c "from codec_share import Codec; c = Codec(); s = c.stamp(1); assert c.open(s, c.seal(s, b'ok', 2, 3)[1:], 2) == b'ok'"
           printf 'data\n' > file
           CODEC_SHARE_PIN=1234 venv/bin/codec-share split file
           CODEC_SHARE_PIN=1234 venv/bin/codec-share join file.1.share file.3.share | grep -qx data
@@ -73,5 +73,5 @@ jobs:
         with:
           name: codec-share-wasm
           path: |
-            wasm/codec_share/codec-share.wasm
+            wasm/codec-share.wasm
             dist/

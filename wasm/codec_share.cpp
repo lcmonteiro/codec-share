@@ -7,12 +7,13 @@
 /// WebAssembly entry points
 ///
 ///   A flat C interface over the codec, built as a WASI reactor so any wasm runtime can load it
-///   (see wasm/codec_share.py for the python binding).
+///   (bindings in wasm/bindings).
 ///
-///   seal   data -> [magic|length|checksum|data|padding] split in k frames, coded in n frames
-///   open   any k independent coded frames + the same stamp -> data
+///   cs_encode  data -> [magic|length|checksum|data|padding] split in `needed` frames, coded in
+///              `total` frames
+///   cs_decode  any `needed` independent coded frames + the same stamp -> data
 ///
-///   Without the stamp used to seal, the frames do not decode (detected by the checksum).
+///   Without the stamp used to encode, the frames do not decode (detected by the checksum).
 /// ===============================================================================================
 
 #include <cstdint>
@@ -34,7 +35,7 @@ using Container = share::codec::container<Vector>;
 enum : int32_t {
     ERROR_ARGUMENT = -1, // invalid arguments
     ERROR_SHARES   = -2, // not enough independent frames
-    ERROR_STAMP    = -3, // frames do not open with this stamp (or are corrupted)
+    ERROR_STAMP    = -3, // frames do not decode with this stamp (or are corrupted)
     ERROR_BUFFER   = -4, // output buffer too small
 };
 
@@ -44,7 +45,7 @@ constexpr uint32_t HEADER_SIZE = 3 * sizeof(uint32_t);
 constexpr uint32_t SEED_SIZE   = sizeof(uint32_t);
 constexpr uint32_t STAMP_SIZE  = 256 * 2;
 constexpr uint32_t MAX_FRAMES  = 255;
-constexpr uint32_t MAX_SPLIT   = 16;
+constexpr uint32_t MAX_NEEDED   = 16;
 
 /// fnv-1a checksum
 uint32_t checksum(const uint8_t* data, uint32_t size) {
@@ -55,8 +56,8 @@ uint32_t checksum(const uint8_t* data, uint32_t size) {
 }
 
 /// data frame size, a multiple of the word size (the gf8 operations work in words)
-uint32_t data_frame_size(uint32_t size, uint32_t split) {
-    auto frame = (uint64_t{HEADER_SIZE} + size + split - 1) / split;
+uint32_t data_frame_size(uint32_t size, uint32_t needed) {
+    auto frame = (uint64_t{HEADER_SIZE} + size + needed - 1) / needed;
     return uint32_t((frame + sizeof(int) - 1) & ~uint64_t{sizeof(int) - 1});
 }
 
@@ -67,7 +68,7 @@ share::codec::token::shared::Stamp load_stamp(const uint8_t* raw) {
     for (auto& density : stamp) {
         density.first  = *raw++;
         density.second = *raw++;
-        // densities able to merge most of the frames, required to seal in a sane time
+        // densities able to merge most of the frames, required to encode in a sane time
         usable += (__builtin_popcount(density.first) >= 3 && density.second >= 127);
     }
     if (usable < 32)
@@ -88,7 +89,7 @@ EXPORT(cs_stamp_size) uint32_t cs_stamp_size() { return STAMP_SIZE; }
 /// @param seed
 /// @param out   STAMP_SIZE bytes
 /// @return STAMP_SIZE or error
-EXPORT(cs_stamp_generate) int32_t cs_stamp_generate(uint32_t type, uint64_t seed, uint8_t* out) {
+EXPORT(cs_stamp) int32_t cs_stamp(uint32_t type, uint64_t seed, uint8_t* out) {
     if (type > uint32_t(share::codec::token::Type::FULL) || !out)
         return ERROR_ARGUMENT;
     auto stamp = share::codec::token::generate(share::codec::token::Type(type), seed);
@@ -101,39 +102,39 @@ EXPORT(cs_stamp_generate) int32_t cs_stamp_generate(uint32_t type, uint64_t seed
 
 /// coded frame size
 /// @param size  data size
-/// @param split number of frames needed to open
+/// @param needed number of frames needed to decode
 /// @return frame size or error
-EXPORT(cs_frame_size) int32_t cs_frame_size(uint32_t size, uint32_t split) {
-    if (split == 0 || split > MAX_SPLIT || size > (1u << 30))
+EXPORT(cs_frame_size) int32_t cs_frame_size(uint32_t size, uint32_t needed) {
+    if (needed == 0 || needed > MAX_NEEDED || size > (1u << 30))
         return ERROR_ARGUMENT;
-    return int32_t(data_frame_size(size, split) + SEED_SIZE);
+    return int32_t(data_frame_size(size, needed) + SEED_SIZE);
 }
 
-/// seal data in coded frames
+/// encode data in coded frames
 /// @param stamp STAMP_SIZE bytes
 /// @param data
 /// @param size
-/// @param split number of frames needed to open (k)
-/// @param count number of coded frames (n >= k)
-/// @param out   count * cs_frame_size(size, split) bytes
+/// @param needed number of frames needed to decode (k)
+/// @param total  number of coded frames (n >= k)
+/// @param out   total * cs_frame_size(size, needed) bytes
 /// @param cap   out capacity
 /// @return frame size or error
-EXPORT(cs_seal)
-int32_t cs_seal(
-  const uint8_t* stamp, const uint8_t* data, uint32_t size, uint32_t split, uint32_t count,
+EXPORT(cs_encode)
+int32_t cs_encode(
+  const uint8_t* stamp, const uint8_t* data, uint32_t size, uint32_t needed, uint32_t total,
   uint8_t* out, uint32_t cap) {
-    auto frame_size = cs_frame_size(size, split);
-    if (frame_size < 0 || !stamp || (!data && size) || count < split || count > MAX_FRAMES)
+    auto frame_size = cs_frame_size(size, needed);
+    if (frame_size < 0 || !stamp || (!data && size) || total < needed || total > MAX_FRAMES)
         return ERROR_ARGUMENT;
-    if (uint64_t{cap} < uint64_t{count} * uint32_t(frame_size) || !out)
+    if (uint64_t{cap} < uint64_t{total} * uint32_t(frame_size) || !out)
         return ERROR_BUFFER;
     auto token = load_stamp(stamp);
     if (!token)
         return ERROR_STAMP;
 
     // header + data + padding
-    auto length = data_frame_size(size, split);
-    auto buffer = Vector(size_t{length} * split, 0);
+    auto length = data_frame_size(size, needed);
+    auto buffer = Vector(size_t{length} * needed, 0);
     auto it     = buffer.begin();
     it          = share::codec::helpers::copy(MAGIC, it);
     it          = share::codec::helpers::copy(size, it);
@@ -141,32 +142,32 @@ int32_t cs_seal(
     std::copy(data, data + size, it);
 
     // split and code, every coded frame merges all data frames
-    auto encoder = share::codec::encoder<Vector>(split, token);
+    auto encoder = share::codec::encoder<Vector>(needed, token);
     for (auto pos = buffer.begin(); pos != buffer.end(); pos += length)
         encoder.push(Vector(pos, pos + length));
-    for (auto& frame : encoder.pop(count, split))
+    for (auto& frame : encoder.pop(total, needed))
         out = std::copy(frame.begin(), frame.end(), out);
     return frame_size;
 }
 
-/// open coded frames
+/// decode coded frames
 /// @param stamp STAMP_SIZE bytes
-/// @param data  count * frame bytes
+/// @param data  total * frame bytes
 /// @param frame coded frame size
-/// @param count number of coded frames
-/// @param split number of frames needed to open (k)
+/// @param total  number of coded frames
+/// @param needed number of frames needed to decode (k)
 /// @param out
 /// @param cap   out capacity
 /// @return data size or error
-EXPORT(cs_open)
-int32_t cs_open(
-  const uint8_t* stamp, const uint8_t* data, uint32_t frame, uint32_t count, uint32_t split,
+EXPORT(cs_decode)
+int32_t cs_decode(
+  const uint8_t* stamp, const uint8_t* data, uint32_t frame, uint32_t total, uint32_t needed,
   uint8_t* out, uint32_t cap) {
-    if (!stamp || !data || split == 0 || split > MAX_SPLIT || count == 0 || count > MAX_FRAMES)
+    if (!stamp || !data || needed == 0 || needed > MAX_NEEDED || total == 0 || total > MAX_FRAMES)
         return ERROR_ARGUMENT;
     if (frame <= SEED_SIZE || (frame - SEED_SIZE) % sizeof(int))
         return ERROR_ARGUMENT;
-    if (count < split)
+    if (total < needed)
         return ERROR_SHARES;
     auto token = load_stamp(stamp);
     if (!token)
@@ -174,11 +175,11 @@ int32_t cs_open(
 
     // decode
     auto coded = Container();
-    for (auto end = data + uint64_t{frame} * count; data != end; data += frame)
+    for (auto end = data + uint64_t{frame} * total; data != end; data += frame)
         coded.push_back(Vector(data, data + frame));
-    auto decoder = share::codec::decoder<Vector>(split, token);
+    auto decoder = share::codec::decoder<Vector>(needed, token);
     decoder.push(std::move(coded));
-    if (decoder.size() < split)
+    if (decoder.size() < needed)
         return ERROR_SHARES;
 
     // join
