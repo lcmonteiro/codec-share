@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <random>
 #include <vector>
 
 // Codec Token
@@ -64,15 +65,15 @@ namespace token {
         auto min = tmp.first;
         auto max = tmp.second;
         // generator
-        auto gen    = std::mt19937_64{seed};
-        auto field  = std::uniform_int_distribution<uint8_t>{min.first , max.first };
-        auto sparse = std::uniform_int_distribution<uint8_t>{min.second, max.second};
+        auto gen     = std::mt19937_64{seed};
+        auto bits    = std::uniform_int_distribution<unsigned>{min.first , max.first };
+        auto density = std::uniform_int_distribution<unsigned>{min.second, max.second};
         // init stamp
         auto out = Stamp{256};
         // build stamp
-        for (auto& v : out) {
-            v.first  = mask(field(gen));
-            v.second = sparse(gen);
+        for (auto& [field, sparsity] : out) {
+            field    = mask(uint8_t(bits(gen)));
+            sparsity = uint8_t(density(gen));
         }
         // return a unique pointer
         return std::make_shared<const Stamp>(std::move(out));

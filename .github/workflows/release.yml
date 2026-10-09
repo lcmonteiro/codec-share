@@ -1,0 +1,57 @@
+name: release
+
+# push a v<version> tag (matching wasm/bindings/python/pyproject.toml) to publish the python
+# package:
+#   git tag v0.1.0 && git push origin v0.1.0
+# the wheel is then a GitHub release asset, usable as a uv / pip dependency:
+#   https://github.com/lcmonteiro/codec-share/releases/download/v0.1.0/codec_share-0.1.0-py3-none-any.whl
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      WASI_SDK_VERSION: "25"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: version
+        run: |
+          version="$(python -c "import tomllib; print(tomllib.load(open('wasm/bindings/python/pyproject.toml', 'rb'))['project']['version'])")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match wasm/bindings/python/pyproject.toml version $version"
+            exit 1
+          fi
+      - name: wasi-sdk
+        run: |
+          curl -sSLf "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux.tar.gz" \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux" >> "$GITHUB_ENV"
+      - name: wasm up to date
+        run: |
+          ./wasm/build.sh
+          if ! git diff --quiet -- wasm/codec-share.wasm; then
+            echo "::error file=wasm/codec-share.wasm::wasm/codec-share.wasm is not the build of the sources"
+            exit 1
+          fi
+      - name: test
+        working-directory: wasm/bindings/python
+        run: |
+          pip install wasmtime click build
+          python -m unittest discover -s tests
+      - name: package
+        run: python -m build wasm/bindings/python --outdir dist
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "codec-share $GITHUB_REF_NAME" --generate-notes

@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------------------------------
+  # native library tests
+  # -------------------------------------------------------------------------------------
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: configure
+        run: cmake -S . -B build -DENABLE_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - name: build
+        run: cmake --build build -j
+      - name: test
+        run: ctest --test-dir build --output-on-failure
+
+  # -------------------------------------------------------------------------------------
+  # wasm gate: the committed wasm/codec-share.wasm must be the build of the sources
+  # -------------------------------------------------------------------------------------
+  wasm:
+    runs-on: ubuntu-24.04
+    env:
+      WASI_SDK_VERSION: "25"
+    steps:
+      - uses: actions/checkout@v4
+      - name: wasi-sdk
+        run: |
+          curl -sSLf "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux.tar.gz" \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux" >> "$GITHUB_ENV"
+      - name: rebuild
+        run: ./wasm/build.sh
+      - name: up to date
+        run: |
+          if ! git diff --quiet -- wasm/codec-share.wasm; then
+            echo "::error file=wasm/codec-share.wasm::wasm/codec-share.wasm is not the build of the sources: run ./wasm/build.sh (wasi-sdk ${WASI_SDK_VERSION}) and commit it, or take it from the codec-share-wasm artifact of this run"
+            exit 1
+          fi
+          sha256sum wasm/codec-share.wasm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: python binding test
+        working-directory: wasm/bindings/python
+        run: |
+          pip install wasmtime click
+          python -m unittest discover -s tests -v
+      - name: python package
+        run: |
+          pip install build
+          python -m build wasm/bindings/python --outdir dist
+      - name: python package test
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m venv venv
+          venv/bin/pip install "$GITHUB_WORKSPACE"/dist/*.whl
+          printf 'data\n' > file
+          CODEC_SHARE_PIN=1234 venv/bin/codec-share split file
+          CODEC_SHARE_PIN=1234 venv/bin/codec-share join file.1.share file.3.share | grep -qx data
+      - name: artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codec-share-wasm
+          path: |
+            wasm/codec-share.wasm
+            dist/

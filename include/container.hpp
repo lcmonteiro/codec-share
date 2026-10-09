@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <ostream>
 #include <stdexcept>
 #include <vector>
@@ -49,7 +50,11 @@ class container : public std::vector<Vector> {
         this->emplace_back(std::forward<Container>(container));
         if (this->front().size() != this->back().size()) {
             this->pop_back();
+#if defined(__cpp_exceptions)
             throw exception("unexpected container size");
+#else
+            std::abort();
+#endif
         }
     }
 
