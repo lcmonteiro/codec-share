@@ -11,7 +11,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from codec_share import Stamp, join, load
-from codec_share.cli import commands, main
+from codec_share.cli import Options, main
 
 DATA = b'credentials:\n  aa:\n    pass: aa-pass\n'
 
@@ -29,8 +29,8 @@ class CommandTest(unittest.TestCase):
         self.file.write_bytes(DATA)
         self.runner = CliRunner()
 
-    def run_ok(self, *args, command=main, **kwargs):
-        result = self.runner.invoke(command, list(map(str, args)), **kwargs)
+    def run_ok(self, *args, **kwargs):
+        result = self.runner.invoke(main, list(map(str, args)), **kwargs)
         self.assertEqual(result.exit_code, 0, result.output)
         return result
 
@@ -69,17 +69,20 @@ class CommandTest(unittest.TestCase):
             if not result.exit_code:
                 self.assertEqual(result.stdout_bytes, DATA)
 
-    def test_custom_command(self):
+    def test_tool_options(self):
         def validate(data):
             if not data.startswith(b'credentials'):
                 raise ValueError('not settings')
-        tool = commands('tool-share', pin_envvar='TOOL_PIN', validate=validate, what='settings')
-        self.assertIn('Split a settings', self.run_ok('--help', command=tool).output)
-        self.run_ok('split', self.file, command=tool, env={'TOOL_PIN': '9'})
+        tool = {'obj': Options(pin_envvar='TOOL_PIN', validate=validate),
+                'prog_name': 'tool-share'}
+        self.assertIn('Usage: tool-share', self.run_ok('--help', **tool).output)
+        self.run_ok('split', self.file, env={'TOOL_PIN': '9'}, **tool)
+        self.assertEqual(join(load([self.share(1), self.share(2)]), Stamp.from_pin('9')), DATA)
         self.file.write_bytes(b'nope')
-        result = self.runner.invoke(tool, ['split', str(self.file)], env={'TOOL_PIN': '9'})
+        result = self.runner.invoke(main, ['split', str(self.file)], env={'TOOL_PIN': '9'},
+                                    **tool)
         self.assertEqual(result.exit_code, 1)
-        self.assertIn('invalid settings: not settings', result.output)
+        self.assertIn('invalid file: not settings', result.output)
 
     def test_python_module(self):
         import subprocess

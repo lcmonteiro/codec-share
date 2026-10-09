@@ -78,12 +78,12 @@ changes, the file is split again over all its shares (the siblings named
 removed in any case. The editor must only return once the file is closed (`code --wait`,
 `subl -w`...). The pin is read from `$CODEC_SHARE_PIN` when set.
 
-Tools reuse the commands under their own name, pin variable and file validation:
+Tools run the same `main` command under their own name, pin variable and file validation:
 
 ```python
-from codec_share.cli import commands
+from codec_share.cli import Options, main
 
-main = commands('mytool-share', pin_envvar='MYTOOL_PIN', validate=check, what='settings file')
+main(prog_name='mytool-share', obj=Options(pin_envvar='MYTOOL_PIN', validate=check))
 ```
 
 ```bash

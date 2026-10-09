@@ -60,8 +60,9 @@ TEST_P(CodecEnvironment, merges_test) {
         for (auto& vec : input)
             EXPECT_FALSE(std::equal(std::begin(vec), std::end(vec), std::begin(frame)));
     auto decoder = share::codec::decoder<std::vector<uint8_t>>(8, coded, token);
-    if (decoder.full())
+    if (decoder.full()) {
         EXPECT_EQ(decoder.pop(), share::codec::container<std::vector<uint8_t>>(input));
+    }
 }
 INSTANTIATE_TEST_SUITE_P(
   CodecCommon,
