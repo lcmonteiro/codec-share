@@ -66,7 +66,9 @@ jobs:
           venv/bin/pip install "$GITHUB_WORKSPACE"/dist/*.whl
           printf 'data\n' > file
           CODEC_SHARE_PIN=1234 venv/bin/codec-share split file
-          CODEC_SHARE_PIN=1234 venv/bin/codec-share join file.1.share file.3.share | grep -qx data
+          test -d file && test ! -e file.1.share
+          CODEC_SHARE_PIN=1234 venv/bin/codec-share join file | grep -qx data
+          CODEC_SHARE_PIN=1234 venv/bin/codec-share join file/1.share file/3.share | grep -qx data
       - name: artifact
         if: always()
         uses: actions/upload-artifact@v4

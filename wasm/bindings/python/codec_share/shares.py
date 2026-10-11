@@ -2,8 +2,10 @@
 # shares: a file coded in `total` shares, any `needed` of them with the stamp give it back
 #
 #   shares = split(data, stamp, total=3, needed=2)
-#   paths  = save(shares, 'config.yml')           # config.yml.1.share ... config.yml.3.share
-#   data   = join(load(paths[1:]), stamp)
+#   data   = join(shares[1:], stamp)
+#
+#   split_file('config.yml', stamp)                # config.yml/ 1.share 2.share 3.share
+#   data   = join(load(['config.yml']), stamp)     # a folder stands for its shares
 #
 #   share file: magic | needed | total | index | 0 | split id (8 bytes) | coded frame
 #
@@ -13,6 +15,7 @@
 # =======================================================================================
 import os
 import re
+import shutil
 import struct
 from dataclasses import dataclass
 from itertools import combinations
@@ -20,13 +23,13 @@ from math import comb
 from pathlib import Path
 
 from .codec import Codec, CodecError, NotEnoughShares, WrongStamp
-from .files import write_private
+from .files import wipe, write_private
 
 MAGIC = b'CSS1'
 HEADER = struct.Struct('<4sBBBx8s')
 MAX_CHECKS = 500
 MAX_RETRIES = 10
-SHARE_NAME = re.compile(r'^(?P<prefix>.+)\.(?P<index>\d+)\.share$')
+SHARE_NAME = re.compile(r'^(?:(?P<prefix>.+)\.)?(?P<index>\d+)\.share$')
 
 
 class InvalidShare(CodecError):
@@ -120,26 +123,86 @@ def _independent(codec, data, stamp, frames, needed):
 # =======================================================================================
 # share files
 # =======================================================================================
+def split_file(path, stamp, total=3, needed=2, folder=None):
+    """
+    splits the file at path in a folder of shares <index>.share, and returns their paths
+      folder  where the shares go, the file is kept; by default the file is replaced by a
+              folder of the same name
+    the shares are written aside, joined back from disk and compared with the file first:
+    the file is only removed once every group of needed shares gives it back
+    """
+    path = Path(path)
+    target = Path(folder) if folder else path
+    if path.is_dir():
+        raise InvalidShare(f'{path} is a folder, already split?')
+    if folder and target.exists():
+        raise FileExistsError(f'{target} already exists')
+    data = path.read_bytes()
+    shares = split(data, stamp, total, needed)
+
+    staging = target.with_name(f'.{target.name}.{os.getpid()}.shares')
+    staging.mkdir(mode=0o700)
+    try:
+        paths = [share.save(staging / f'{share.index}.share') for share in shares]
+        _check(data, load(paths), stamp, needed)
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    if not folder:
+        wipe(path)
+    try:
+        staging.rename(target)
+    except OSError as error:
+        raise OSError(f'shares kept in {staging}: {error}') from None
+    return [target / p.name for p in paths]
+
+
+def expand(paths):
+    """share paths, a folder standing for the shares in it"""
+    found = []
+    for path in map(Path, paths):
+        if path.is_dir():
+            inside = sorted(path.glob('*.share'), key=lambda p: (len(p.name), p.name))
+            if not inside:
+                raise InvalidShare(f'no shares in {path}')
+            found.extend(inside)
+        else:
+            found.append(path)
+    return found
+
+
 def save(shares, prefix):
     """writes the shares in <prefix>.<index>.share, returns the paths"""
     return [share.save(f'{prefix}.{share.index}.share') for share in shares]
 
 
 def load(paths):
-    return [Share.load(path) for path in paths]
+    """shares of files, or of folders of shares"""
+    return [Share.load(path) for path in expand(paths)]
 
 
 def siblings(paths, shares):
-    """index -> path of every share of the split: the given ones, and the ones named
-    <prefix>.<index>.share next to them"""
-    found, prefixes = {}, set()
-    for path, share in zip(paths, shares):
-        found[share.index] = Path(path)
-        match = SHARE_NAME.match(str(path))
+    """index -> path of every share of the split: the given ones, and the ones named alike
+    next to them (<prefix>.<index>.share, or <index>.share in a folder)"""
+    found, patterns = {}, set()
+    for path, share in zip(expand(paths), shares):
+        path = Path(path)
+        found[share.index] = path
+        match = SHARE_NAME.match(path.name)
         if match and int(match['index']) == share.index:
-            prefixes.add(match['prefix'])
-    if len(prefixes) == 1 and shares:
-        prefix = prefixes.pop()
+            patterns.add((path.parent, match['prefix']))
+    if len(patterns) == 1 and shares:
+        parent, prefix = patterns.pop()
         for index in range(1, shares[0].total + 1):
-            found.setdefault(index, Path(f'{prefix}.{index}.share'))
+            name = f'{prefix}.{index}.share' if prefix else f'{index}.share'
+            found.setdefault(index, parent / name)
     return found
+
+
+def _check(data, shares, stamp, needed):
+    """every group of needed shares (up to MAX_CHECKS groups) joins back to data"""
+    groups = (combinations(shares, needed)
+              if comb(len(shares), needed) <= MAX_CHECKS else [shares])
+    for group in groups:
+        if join(group, stamp) != data:
+            raise CodecError('shares do not join back to the file, nothing removed')

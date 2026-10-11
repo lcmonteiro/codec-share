@@ -1,7 +1,7 @@
 # =======================================================================================
 # edit: the file of some shares, edited in place
 #
-#   edit(['config.yml.1.share', 'config.yml.3.share'], stamp)
+#   edit(['config.yml'], stamp)                    # a folder of shares, or share files
 #
 #   the file is joined in a private temporary folder (memory backed when there is one) and
 #   opened in an editor. When the editor closes with changes, the file is split again over
@@ -27,6 +27,7 @@ def edit(paths, stamp, editor=None, validate=None, echo=print, ask=None):
       validate  validate(data) raises when the edited file must not be saved
       ask       ask(question) -> bool, to edit again an invalid file (default: input)
     """
+    paths = _shares.expand(paths)
     shares = _shares.load(paths)
     data = _shares.join(shares, stamp)
     first = shares[0]
@@ -64,8 +65,12 @@ def edit(paths, stamp, editor=None, validate=None, echo=print, ask=None):
 
 
 def _plain_name(paths):
-    match = _shares.SHARE_NAME.match(Path(paths[0]).name)
-    return match['prefix'] if match else 'shares.txt'
+    """the name of the split file: <name>.<index>.share, or <name>/<index>.share"""
+    path = Path(paths[0])
+    match = _shares.SHARE_NAME.match(path.name)
+    if match and match['prefix']:
+        return match['prefix']
+    return path.parent.name if match and path.parent.name else 'shares.txt'
 
 
 def _private_tmp():
