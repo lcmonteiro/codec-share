@@ -2,9 +2,9 @@
 # cli: the codec-share command (click)
 #
 #   codec-share stamp my.stamp                            random stamp file
-#   codec-share split config.yml [-n 3] [-k 2]            config.yml.1.share ...
-#   codec-share join config.yml.1.share config.yml.3.share
-#   codec-share edit config.yml.1.share config.yml.3.share
+#   codec-share split config.yml [-n 3] [-k 2]            config.yml/ 1.share 2.share ...
+#   codec-share join config.yml                           a folder, or share files
+#   codec-share edit config.yml
 #
 #   the pin is asked, or read from $CODEC_SHARE_PIN, unless --stamp is given.
 #
@@ -81,7 +81,7 @@ _stamp_option = click.option(
 
 _shares_argument = click.argument(
     'paths', metavar='SHARES...', nargs=-1, required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path))
+    type=click.Path(exists=True, path_type=Path))
 
 
 # =======================================================================================
@@ -108,17 +108,20 @@ def stamp(output):
 @click.option('-n', '--total', default=3, show_default=True, help='Number of shares.')
 @click.option('-k', '--needed', default=2, show_default=True,
               help='Number of shares needed to join.')
-@click.option('-o', '--output', 'prefix', metavar='PREFIX',
-              help='Shares path prefix, PREFIX.<index>.share  [default: FILE]')
+@click.option('-o', '--output', 'folder', metavar='FOLDER',
+              type=click.Path(file_okay=False, path_type=Path),
+              help='Write the shares in FOLDER and keep FILE.')
 @_stamp_option
 @click.pass_obj
 @_errors
-def split(options, file, total, needed, prefix, stamp_file):
-    """Split a file in shares."""
-    data = file.read_bytes()
-    _validate(options, data)
+def split(options, file, total, needed, folder, stamp_file):
+    """Split FILE in shares: FILE becomes a folder of the same name holding them.
+
+    The shares are joined back from disk and compared with FILE first: it is only
+    removed (wiped) once every group of NEEDED shares gives it back."""
+    _validate(options, file.read_bytes())
     stamp = _stamp(options, stamp_file, confirm=True)
-    for path in _shares.save(_shares.split(data, stamp, total, needed), prefix or file):
+    for path in _shares.split_file(file, stamp, total, needed, folder):
         click.echo(path)
 
 
@@ -130,7 +133,7 @@ def split(options, file, total, needed, prefix, stamp_file):
 @click.pass_obj
 @_errors
 def join(options, paths, output, stamp_file):
-    """Join shares back in the file."""
+    """Join shares (files, or a folder of shares) back in the file."""
     data = _shares.join(_shares.load(paths), _stamp(options, stamp_file))
     if output:
         output.write_bytes(data)
@@ -147,9 +150,9 @@ def join(options, paths, output, stamp_file):
 @click.pass_obj
 @_errors
 def edit(options, paths, editor, stamp_file):
-    """Edit the file of shares in place: once the editor closes with changes, it is split
-    again over all its shares (siblings named <prefix>.<index>.share too); the plain file
-    is always wiped."""
+    """Edit the file of shares (files, or a folder of shares) in place: once the editor
+    closes with changes, it is split again over all its shares (siblings named alike too);
+    the plain file is always wiped."""
     written = _edit(paths, _stamp(options, stamp_file), editor, options.validate,
                     echo=click.echo,
                     ask=lambda question: click.confirm(question, default=True, err=True))

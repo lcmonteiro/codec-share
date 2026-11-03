@@ -13,8 +13,8 @@ data   = join(shares[1:], stamp)
 ```
 
 ```bash
-codec-share split config.yml        # config.yml.1.share ... config.yml.3.share
-codec-share edit config.yml.1.share config.yml.3.share
+codec-share split config.yml        # config.yml/ 1.share 2.share 3.share, checked first
+codec-share edit config.yml
 ```
 
 The coding hides the file from a casual reader, it is **not** encryption.

@@ -42,15 +42,15 @@ WASI_SDK_PATH=/path/to/wasi-sdk-25.0 ./wasm/build.sh   # -> wasm/codec-share.was
 `codec-share` command ([click](https://click.palletsprojects.com)).
 
 ```python
-from codec_share import Stamp, split, join, save, load, edit
+from codec_share import Stamp, split, join, split_file, load, edit
 
 stamp  = Stamp.from_pin('4821')                  # or Stamp.random(), Stamp.load(path)
 shares = split(data, stamp, total=3, needed=2)   # any 2 of the 3 shares ...
 data   = join(shares[1:], stamp)                 # ... give the data back
 
-paths  = save(shares, 'config.yml')              # config.yml.1.share ... config.yml.3.share
-data   = join(load(paths[:2]), stamp)
-edit(paths[:2], stamp)                           # edit in place, see below
+split_file('config.yml', stamp)                  # config.yml/ 1.share 2.share 3.share
+data   = join(load(['config.yml']), stamp)       # a folder stands for its shares
+edit(['config.yml'], stamp)                      # edit in place, see below
 ```
 
 | name | what it is |
@@ -58,23 +58,29 @@ edit(paths[:2], stamp)                           # edit in place, see below
 | `Stamp` | the secret shaping the coding: `from_pin`, `random`, `load`, `save` |
 | `Share` | one share: `needed`, `total`, `index`, `split_id`, `frame`; `parse`, `load`, `save` |
 | `split`, `join` | data to shares, shares to data |
-| `save`, `load` | share files, named `<prefix>.<index>.share` |
+| `split_file` | a file to a folder of shares, checked before the file is removed |
+| `save`, `load`, `expand` | share files (`<prefix>.<index>.share`), or folders of shares |
 | `edit` | the file of some shares, edited in place |
 | `Codec` | the WebAssembly module: `stamp`, `encode`, `decode` |
 | `NotEnoughShares`, `WrongStamp`, `InvalidShare` | errors, all `CodecError` |
 
 ```bash
-codec-share split config.yml                 # asks a pin, config.yml.{1,2,3}.share, any 2 join
+codec-share split config.yml                 # asks a pin, config.yml/ {1,2,3}.share, any 2 join
 codec-share split config.yml -n 4 -k 3       # 4 shares, any 3 join
+codec-share split config.yml -o backup       # shares in backup/, config.yml kept
 codec-share stamp my.stamp                   # random stamp file, instead of a pin (--stamp)
-codec-share join config.yml.1.share config.yml.3.share > config.yml
-codec-share edit config.yml.1.share config.yml.3.share
+codec-share join config.yml > plain.yml      # a folder, or share files
+codec-share edit config.yml
 ```
+
+`split` writes the shares aside first, joins every group of `needed` shares back from disk
+and compares it with the file; only then the file is wiped (overwritten and removed) and
+replaced by the folder of the same name. Any failure leaves the file untouched.
 
 `edit` joins the file in a private temporary folder (memory backed when there is one) and
 opens it in an editor (`-e`, else `$VISUAL`, `$EDITOR`). When the editor closes with
-changes, the file is split again over all its shares (the siblings named
-`<prefix>.<index>.share` too, same `needed` and `total`), and the plain file is wiped and
+changes, the file is split again over all its shares (the siblings named alike too, same
+`needed` and `total`), and the plain file is wiped and
 removed in any case. The editor must only return once the file is closed (`code --wait`,
 `subl -w`...). The pin is read from `$CODEC_SHARE_PIN` when set.
 

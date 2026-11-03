@@ -62,7 +62,8 @@ class CodecTest(unittest.TestCase):
     def test_corrupted_frame(self):
         frames = self.codec.encode(b'settings' * 20, self.stamp, 2, 2)
         frames[0] = bytes([frames[0][0] ^ 1]) + frames[0][1:]
-        with self.assertRaises(WrongStamp):
+        # rejected by the checksum, or as dependent frames: never wrong data
+        with self.assertRaises((WrongStamp, NotEnoughShares)):
             self.codec.decode(frames, self.stamp, 2)
 
     def test_invalid(self):

@@ -35,7 +35,7 @@ class CommandTest(unittest.TestCase):
         return result
 
     def share(self, index):
-        return self.folder / f'config.yml.{index}.share'
+        return self.file / f'{index}.share'
 
     def test_stamp_split_edit_join(self):
         stamp = ['--stamp', self.folder / 'my.stamp']
@@ -78,11 +78,45 @@ class CommandTest(unittest.TestCase):
         self.assertIn('Usage: tool-share', self.run_ok('--help', **tool).output)
         self.run_ok('split', self.file, env={'TOOL_PIN': '9'}, **tool)
         self.assertEqual(join(load([self.share(1), self.share(2)]), Stamp.from_pin('9')), DATA)
-        self.file.write_bytes(b'nope')
-        result = self.runner.invoke(main, ['split', str(self.file)], env={'TOOL_PIN': '9'},
-                                    **tool)
+        bad = self.folder / 'bad.yml'
+        bad.write_bytes(b'nope')
+        result = self.runner.invoke(main, ['split', str(bad)], env={'TOOL_PIN': '9'}, **tool)
         self.assertEqual(result.exit_code, 1)
         self.assertIn('invalid file: not settings', result.output)
+
+    def test_split_replaces_the_file_by_a_folder(self):
+        result = self.run_ok('split', self.file, env={'CODEC_SHARE_PIN': '1'})
+        self.assertTrue(self.file.is_dir())
+        self.assertEqual(sorted(p.name for p in self.file.iterdir()),
+                         ['1.share', '2.share', '3.share'])
+        self.assertEqual(result.output.split(), [str(self.share(i)) for i in (1, 2, 3)])
+        self.assertEqual(os.stat(self.file).st_mode & 0o777, 0o700)
+        self.assertEqual([p.name for p in self.folder.iterdir()], ['config.yml'])
+        joined = self.run_ok('join', self.file, env={'CODEC_SHARE_PIN': '1'})
+        self.assertEqual(joined.stdout_bytes, DATA)
+
+    def test_split_to_a_folder_keeps_the_file(self):
+        out = self.folder / 'out'
+        self.run_ok('split', self.file, '-o', out, env={'CODEC_SHARE_PIN': '1'})
+        self.assertEqual(self.file.read_bytes(), DATA)
+        self.assertEqual(join(load([out]), Stamp.from_pin('1')), DATA)
+        result = self.runner.invoke(main, ['split', str(self.file), '-o', str(out)],
+                                    env={'CODEC_SHARE_PIN': '1'})
+        self.assertEqual(result.exit_code, 1)
+        self.assertIn('already exists', result.output)
+
+    def test_split_twice(self):
+        self.run_ok('split', self.file, env={'CODEC_SHARE_PIN': '1'})
+        result = self.runner.invoke(main, ['split', str(self.file)], env={'CODEC_SHARE_PIN': '1'})
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertEqual(len(list(self.file.iterdir())), 3)
+
+    def test_edit_a_folder(self):
+        pin = {'CODEC_SHARE_PIN': '1'}
+        self.run_ok('split', self.file, '-n', 4, '-k', 3, env=pin)
+        self.run_ok('edit', self.file, '-e', editor("open(path, 'ab').write(b'x: 1\\n')"), env=pin)
+        self.assertEqual(join(load([self.share(4), self.share(1), self.share(2)]),
+                              Stamp.from_pin('1')), DATA + b'x: 1\n')
 
     def test_python_module(self):
         import subprocess

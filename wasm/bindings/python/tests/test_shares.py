@@ -9,8 +9,10 @@ import unittest
 from itertools import combinations
 from pathlib import Path
 
-from codec_share import (InvalidShare, NotEnoughShares, Share, Stamp, WrongStamp, edit, join,
-                         load, save, split)
+from unittest import mock
+
+from codec_share import (CodecError, InvalidShare, NotEnoughShares, Share, Stamp, WrongStamp,
+                         edit, join, load, save, split, split_file)
 
 DATA = b'credentials:\n  aa:\n    user: aa-user\n    pass: aa-pass\n'
 
@@ -60,16 +62,19 @@ class SharesTest(unittest.TestCase):
             self.assertNotIn(b'pass', bytes(share))
 
     def test_wrong_pin(self):
-        # a wrong stamp opens now and then (the coding is not encryption), never wrongly
-        shares = split(DATA, Stamp.from_pin('1234'), 2, 2)
-        failures = 0
-        for seed in range(20):
-            try:
-                self.assertEqual(join(shares, Stamp.from_seed(seed)), DATA)
-            except WrongStamp as error:
-                self.assertIn('wrong pin or stamp', str(error))
-                failures += 1
-        self.assertGreater(failures, 10)
+        # a wrong stamp opens now and then (the coding is not encryption), never wrongly;
+        # some splits open with many stamps, so count over several splits
+        failures = tries = 0
+        for _ in range(5):
+            shares = split(DATA, Stamp.from_pin('1234'), 2, 2)
+            for seed in range(20):
+                tries += 1
+                try:
+                    self.assertEqual(join(shares, Stamp.from_seed(seed)), DATA)
+                except WrongStamp as error:
+                    self.assertIn('wrong pin or stamp', str(error))
+                    failures += 1
+        self.assertGreater(failures, tries // 2)
 
     def test_missing_shares(self):
         shares = split(DATA, Stamp.random(), 3, 3)
@@ -95,6 +100,70 @@ class SharesTest(unittest.TestCase):
                          ['config.yml.1.share', 'config.yml.2.share', 'config.yml.3.share'])
         self.assertEqual(os.stat(paths[0]).st_mode & 0o777, 0o600)
         self.assertEqual(join(load(paths[1:]), stamp), DATA)
+
+
+class SplitFileTest(unittest.TestCase):
+    def setUp(self):
+        self.folder = Path(tempfile.mkdtemp())
+        self.file = self.folder / 'config.yml'
+        self.file.write_bytes(DATA)
+        self.stamp = Stamp.random()
+
+    def test_file_becomes_a_folder(self):
+        paths = split_file(self.file, self.stamp, total=4, needed=3)
+        self.assertEqual(paths, [self.file / f'{i}.share' for i in (1, 2, 3, 4)])
+        self.assertTrue(self.file.is_dir())
+        self.assertEqual(join(load([self.file]), self.stamp), DATA)
+        for group in combinations(paths, 3):
+            self.assertEqual(join(load(group), self.stamp), DATA)
+        self.assertEqual([p.name for p in self.folder.iterdir()], ['config.yml'])
+
+    def test_failed_check_keeps_the_file(self):
+        with mock.patch('codec_share.shares.join', return_value=b'not the data'):
+            with self.assertRaisesRegex(CodecError, 'nothing removed'):
+                split_file(self.file, self.stamp)
+        self.assertEqual(self.file.read_bytes(), DATA)
+        self.assertEqual([p.name for p in self.folder.iterdir()], ['config.yml'])
+
+    def test_failed_write_keeps_the_file(self):
+        with mock.patch.object(Share, 'save', side_effect=OSError('disk full')):
+            with self.assertRaises(OSError):
+                split_file(self.file, self.stamp)
+        self.assertEqual(self.file.read_bytes(), DATA)
+        self.assertEqual([p.name for p in self.folder.iterdir()], ['config.yml'])
+
+    def test_original_is_wiped(self):
+        wiped = []
+        with mock.patch('codec_share.shares.wipe', side_effect=lambda p: (wiped.append(p),
+                                                                      Path(p).unlink())):
+            split_file(self.file, self.stamp)
+        self.assertEqual(wiped, [self.file])
+
+    def test_folder_keeps_the_file(self):
+        out = self.folder / 'out'
+        split_file(self.file, self.stamp, folder=out)
+        self.assertEqual(self.file.read_bytes(), DATA)
+        self.assertEqual(join(load([out]), self.stamp), DATA)
+
+    def test_already_split(self):
+        split_file(self.file, self.stamp)
+        with self.assertRaisesRegex(InvalidShare, 'already split'):
+            split_file(self.file, self.stamp)
+
+    def test_empty_folder(self):
+        (self.folder / 'empty').mkdir()
+        with self.assertRaisesRegex(InvalidShare, 'no shares'):
+            load([self.folder / 'empty'])
+
+    def test_edit_a_folder(self):
+        split_file(self.file, self.stamp)
+        seen = self.folder / 'seen'
+        written = edit([self.file / '2.share', self.file / '3.share'], self.stamp, editor(
+            f"open({str(seen)!r}, 'w').write(path); open(path, 'ab').write(b'x')"),
+            echo=lambda _: None)
+        self.assertEqual(sorted(written), [self.file / f'{i}.share' for i in (1, 2, 3)])
+        self.assertEqual(Path(seen.read_text()).name, 'config.yml')
+        self.assertEqual(join(load([self.file]), self.stamp), DATA + b'x')
 
 
 class EditTest(unittest.TestCase):
